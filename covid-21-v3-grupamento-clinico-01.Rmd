@@ -36,7 +36,7 @@ Este documento é ainda tão somente experimentação e análise exploratória e
 
 -------
 
-```{r libraries, echo=TRUE}
+```{r libraries, echo=FALSE}
 suppressPackageStartupMessages(expr = library(tidyverse))
 suppressPackageStartupMessages(expr = library(bnlearn))
 suppressPackageStartupMessages(expr = library(bnstruct))
@@ -76,21 +76,21 @@ dados <- read_csv("x_to_be_factors.csv",
 ```{r echo=TRUE}
 #reselecionar retira a variavel automatica X1
  xx <- select(dados,
-            #FEBRE,
+            FEBRE,
             TOSSE,
-            #GARGANTA,
+            GARGANTA,
             DISPNEIA,
-            #DESC_RESP,
+            DESC_RESP,
             SATURACAO,
             DIARREIA,
-            #VOMITO,
+            VOMITO,
             OUTRO_SIN,
-            #HOSPITAL,
+            HOSPITAL,
             EVOLUCAO,
             RENAL,
             DIABETES,
             OBESIDADE,
-            #CLASSI_OUT,
+            #CLASSI_OUT, algoritmo nao suporta datatype = character
             PERD_OLFT,
             PERD_PALA,
             VACINA,
@@ -104,14 +104,14 @@ x = as.data.frame(xx)
 x_no_na <- na.omit(x)
 ```
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 # 1 influenza
 # 5 COVID
 srag_covid <- x_no_na %>% filter(CLASSI_FIN == 5)
 srag_outras <- x_no_na %>% filter(CLASSI_FIN != 5)
 ```
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 suppressWarnings(bn_mmpc <- mmpc(x_no_na))
 suppressWarnings(bn_mmpc_outras <- mmpc(srag_outras))
 suppressWarnings(bn_mmpc_covid <- mmpc(srag_covid))
@@ -178,32 +178,32 @@ graphviz.plot(bn_hc_outras, shape = 'rectangle', main = "Algoritmo = hc DATA = O
 ```
 
 # Ajustamento da estrutura do Algoritmoritmo *HC* com os dados
-```{r fit, echo=FALSE}
+```{r fit, echo=TRUE}
 fitted_hc = bn.fit(bn_hc, x_no_na)
 fitted_hc_outras = bn.fit(bn_hc_outras, srag_outras)
 fitted_hc_covid = bn.fit(bn_hc_covid, srag_covid)
 ```
 
 ## Descrição estatística da rede para a variável EVOLUCAO DATA =Todas SRAG`s
-```{r echo=FALSE}
+```{r echo=TRUE}
 fitted_hc$EVOLUCAO
 ``` 
 
 ## Descrição estatística da rede para a variável EVOLUCAO DATA = COVID
-```{r echo=FALSE}
+```{r echo=TRUE}
 fitted_hc_covid$EVOLUCAO
 ``` 
 
 
 ## Descrição estatística da rede para a variável EVOLUCAO DATA = OUTRAS
-```{r echo=FALSE}
+```{r echo=TRUE}
 fitted_hc_outras$EVOLUCAO
 ``` 
 
 ---------
 
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 suppressWarnings(bn.fit.barchart(fitted_hc$EVOLUCAO, xlab = "hc ProbabilidadesTodas SRAG", ylab = "EVOLUCAO TODAS SRAG`s"))
 
 suppressWarnings(bn.fit.barchart(fitted_hc_covid$EVOLUCAO, xlab = "hc Probabilidades COVID", ylab = "EVOLUCAO COVID"))
@@ -217,16 +217,14 @@ suppressWarnings(bn.fit.barchart(fitted_hc_outras$EVOLUCAO, xlab = "hc Probabili
 
 # Ajustamento da estrutura do Algoritmoritmo *MMHC* com os dados
 ## Descrição estatística da rede para a variável EVOLUCAO Algoritmo = mmhc
-```{r echo=FALSE}
+```{r echo=TRUE}
 fitted_mmhc = bn.fit(bn_mmhc, x_no_na)
 fitted_mmhc_outras = bn.fit(bn_mmhc_outras, srag_outras)
 fitted_mmhc_covid = bn.fit(bn_mmhc_covid, srag_covid)
 
 
 fitted_mmhc$EVOLUCAO
-
 fitted_mmhc_covid$EVOLUCAO
-
 fitted_mmhc_outras$EVOLUCAO
 
 suppressWarnings(bn.fit.barchart(fitted_mmhc$EVOLUCAO, xlab = "mmhc ProbabilidadesTodas SRAG`s", ylab = "EVOLUCAO TODS SRAG`s"))
