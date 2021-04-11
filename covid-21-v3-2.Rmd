@@ -29,6 +29,12 @@ Gripe/Influenza - https://saude.gov.br/saude-de-a-z/gripe
 
 COVID-19 - https://coronavirus.saude.gov.br/
 
+--------
+
+# Nota
+Este documento é ainda tão somente experimentação e análise exploratória em fase absolutamente incipiente. Por isso a falta de estrutura, gráficos não explicativos, *typos*, etc
+
+-------
 
 ```{r libraries, echo=TRUE}
 suppressPackageStartupMessages(expr = library(tidyverse))
