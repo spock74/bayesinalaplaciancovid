@@ -6,20 +6,21 @@ dados <- read_delim("INFLUD21-05-04-2021.csv",
                     trim_ws = TRUE,
                     col_types = cols(
                                       DT_NOTIFIC = col_character(),# DD/MM/AAAA,
-                                      SEM_NOT = col_character(), #semana notificacao
-                                      DT_SIN_PRI = col_factor(levels = c("1", "2", "9")),
-                                      SEM_PRI = col_factor(levels = c("1", "2", "9")),
-                                      CS_SEXO = col_factor(levels = c("1", "2", "9")),
-                                          #1-Masculino 
-                                          #2-Feminino 
-                                          #9-Ignorado
-                                      DT_NASC = col_factor(levels = c("1", "2", "9")),DD/MM/AAAA
-                                      NU_IDADE_N = col_factor(levels = c("1", "2", "9")),
-                                      TP_IDADE = col_factor(levels = c("1", "2", "9")),
+                                      SEM_NOT = col_double(), #semana notificacao
+                                      DT_SIN_PRI = col_character(),
+                                      SEM_PRI =col_double(),
+                                      CS_SEXO = col_factor(levels = c("M", "F", "I")),
+                                          # M-Masculino 
+                                          # F-Feminino 
+                                          # I-Ignorado
+                                      DT_NASC = col_character(), #DD/MM/AAAA
+                                      NU_IDADE_N = col_character(),
+                                      TP_IDADE = col_factor(levels = c("1", "2", "3")),
                                           #1-Dia 
                                           #2-Mes 
                                           #3-Ano
-                                      CS_GESTANT = col_factor(levels = c("1", "2", "9")),
+                                      COD_IDADE = col_skip(),
+                                      CS_GESTANT = col_factor(levels = c("0", "1", "2", "3", "4", "5", "6", "9")),
                                           #1-1Trimestre 
                                           #2-2Trimestre
                                           #3-3Trimestre 
@@ -27,14 +28,15 @@ dados <- read_delim("INFLUD21-05-04-2021.csv",
                                           #5-Nao
                                           #6-Nao se aplica 
                                           #9-Ignorado
-                                      CS_RACA = col_factor(levels = c("1", "2", "9")), 
+                                      CS_RACA = col_factor(levels = c("1", "2", "3", "4", "5", "9")), 
                                           # 1-Branca 
                                           # 2-Preta 
                                           # 3-Amarela 
                                           # 4-Parda 
                                           # 5-Indigena 
                                           # 9-Ignorado
-                                      CS_ESCOL_N = col_factor(levels = c("1", "2", "9")), 
+                                      CS_ETINIA = col_skip(),
+                                      CS_ESCOL_N = col_factor(levels = c("0", "1", "2", "3", "4", "5", "9")), 
                                           # 0-Sem escolaridade-Analfabeto 
                                           # 1-Fundamental 1o ciclo(1a a 5a serie)
                                           # 2-Fundamental 2o ciclo (6a a 9a serie)
@@ -42,9 +44,12 @@ dados <- read_delim("INFLUD21-05-04-2021.csv",
                                           # 4-Superior
                                           # 5-Nao se aplica 
                                           # 9-Ignorado
-                                      SURTO_SG = col_factor(levels = c("1", "2", "9")), 1-Sim 2-Não 9-Ignorado
+                                      SURTO_SG = col_factor(levels = c("1", "2", "9")), 
+                                          # 1-Sim 
+                                          # 2-Nao
+                                          # 9-Ignorado
                                       NOSOCOMIAL = col_factor(levels = c("1", "2", "9")),
-                                      AVE_SUINO = col_factor(levels = c("1", "2", "9")),
+                                      AVE_SUINO = col_skip(), #col_factor(levels = c("1", "2", "9")),
                                       FEBRE = col_factor(levels = c("1", "2", "9")),
                                       TOSSE = col_factor(levels = c("1", "2", "9")),
                                       GARGANTA = col_factor(levels = c("1", "2", "9")),
@@ -54,7 +59,8 @@ dados <- read_delim("INFLUD21-05-04-2021.csv",
                                       DIARREIA = col_factor(levels = c("1", "2", "9")),
                                       VOMITO = col_factor(levels = c("1", "2", "9")),
                                       OUTRO_SIN = col_factor(levels = c("1", "2", "9")),
-                                      FATOR_RISC = col_factor(levels = c("1", "2", "9")),
+                                      FATOR_RISC = col_factor(levels = c("S", "N")),
+                                      PUERPERA = col_factor(levels = c("1", "2", "9")),
                                       CARDIOPATI = col_factor(levels = c("1", "2", "9")),
                                       HEMATOLOGI = col_factor(levels = c("1", "2", "9")),
                                       SIND_DOWN = col_factor(levels = c("1", "2", "9")),
@@ -68,19 +74,19 @@ dados <- read_delim("INFLUD21-05-04-2021.csv",
                                       OBESIDADE = col_factor(levels = c("1", "2", "9")),
                                       OUT_MORBI = col_factor(levels = c("1", "2", "9")),
                                       VACINA = col_factor(levels = c("1", "2", "9")),
-                                      DT_UT_DOSE = col_factor(levels = c("1", "2", "9")),
+                                      DT_UT_DOSE = col_character(),
                                       ANTIVIRAL = col_factor(levels = c("1", "2", "9")),
-                                      TP_ANTIVIR = col_factor(levels = c("1", "2", "9")),
+                                      TP_ANTIVIR = col_factor(levels = c("1", "2", "3")),
                                           # 1- Oseltamivir 
                                           # 2- Zanamivir 
                                           # 3- Outro
                                       HOSPITAL = col_factor(levels = c("1", "2", "9")),
-                                      DT_INTERNA = col_factor(levels = c("1", "2", "9")),
+                                      DT_INTERNA = col_character(),
                                       UTI = col_factor(levels = c("1", "2", "9")),
-                                      DT_ENTUTI = col_factor(levels = c("1", "2", "9")),
-                                      DT_SAIDUTI = col_factor(levels = c("1", "2", "9")),
-                                      SUPORT_VEN = col_factor(levels = c("1", "2", "9")),
-                                      RAIOX_RES = col_factor(levels = c("1", "2", "9")),
+                                      DT_ENTUTI  = col_character(),
+                                      DT_SAIDUTI = col_character(),
+                                      SUPORT_VEN = col_factor(levels = c("1", "2","3", "9")),
+                                      RAIOX_RES = col_factor(levels = c("1", "2", "3", "4", "5", "6", "9")),
                                           # 1-Normal
                                           # 2-Infiltrado intersticial 
                                           # 3-Consolidacao 
@@ -88,50 +94,65 @@ dados <- read_delim("INFLUD21-05-04-2021.csv",
                                           # 5-Outro
                                           # 6-Nao realizado 
                                           # 9-Ignorado
-                                      DT_RAIOX = col_factor(levels = c("1", "2", "9")),
-                                      DT_COLETA = col_factor(levels = c("1", "2", "9")),
-                                      TP_AMOSTRA = col_factor(levels = c("1", "2", "9")), 
+                                      DT_RAIOX = col_character(),
+                                      DT_COLETA = col_character(),
+                                      TP_AMOSTRA = col_factor(levels = c("1", "2", "3", "4", "5", "9")), 
                                           # 1-Secrecao de Naso-orofaringe 
                                           # 2-LavadoBroco-alveolar 
                                           # 3-Tecidopost-mortem 
                                           # 4-Outra,qual?
                                           # 5-LCR 
                                           # 9-Ignorado
-                                      PCR_RESUL = col_factor(levels = c("1", "2", "9")), 
+                                      PCR_RESUL = col_factor(levels = c("1", "2", "3", "4", "5", "9")), 
                                           # 1-Detectavel
                                           # 2-Nao Detectavel 
                                           # 3-Inconclusivo
                                           # 4-Nao Realizado
                                           # 5-Aguardando Resultado 
                                           # 9-Ignorado
-                                      DT_PCR = col_factor(levels = c("1", "2", "9")),
+                                      DT_PCR = col_character(),
                                       POS_PCROUT = col_factor(levels = c("1", "2", "9")), 
                                           # 1-Sim 
                                           # 2-Nao 
                                           # 9-Ignorado
-                                      CLASSI_FIN = col_factor(levels = c("1", "2", "9")), 
+                                      CLASSI_FIN = col_factor(levels = c("1", "2", "3", "4", "5")), 
                                           # 1-SRAG por influenza 
                                           # 2-SRAG por outro virus respiratorio
                                           # 3-SRAG por outro agente etiologico,qual:
                                           # 4-SRAG nao especificado 
                                           # 5-SRAG por COVID-19
-                                      CRITERIO = col_factor(levels = c("1", "2", "9")),
+                                      CRITERIO = col_factor(levels = c("1", "2", "3", "4")),
                                           # 1. Laboratorial
                                           # 2. ClinicoEpidemiologico 
                                           # 3. Clinico
                                           # 4. ClinicoImagem
-                                      EVOLUCAO = col_factor(levels = c("1", "2", "9")), 
-                                          # 1-Cura
+                                      EVOLUCAO = col_factor(levels = c("1", "2", "3", "9")), 
+                                          # 1-Cura, 
                                           # 2-Obito
                                           # 3-Obito por outras causas 
                                           # 9-Ignorado
-                                      DT_EVOLUCA = col_factor(levels = c("1", "2", "9")),
+                                      DT_EVOLUCA = col_character(),
                                       DOR_ABD = col_factor(levels = c("1", "2", "9")),
                                       FADIGA = col_factor(levels = c("1", "2", "9")),
                                       PERD_OLFT = col_factor(levels = c("1", "2", "9")),
                                       PERD_PALA = col_factor(levels = c("1", "2", "9")),
-                                      DT_TOMO = col_factor(levels = c("1", "2", "9")),
-                                      RES_IGG = col_factor(levels = c("1", "2", "9")),
-                                      RES_IGM = col_factor(levels = c("1", "2", "9")),
-                                      RES_IGA = col_factor(levels = c("1", "2", "9"))
-                                      #
+                                      DT_TOMO = col_character(),
+                                      RES_IGG = col_character(),
+                                      RES_IGM = col_character(),
+                                      RES_IGA = col_character(),
+                                      OUT_ANIM = col_skip(),
+                                      DS_AN_OUT = col_skip(),
+                                      DT_VAC_MAE = col_skip(),
+                                      DT_1_DOSE = col_skip(),
+                                      DT_2_DOSE = col_skip(),
+                                      DT_DOSEUNI = col_skip(),
+                                      TP_FLU_AN = col_skip(),
+                                      TP_FLU_PCR = col_skip(),
+                                      PCR_FLUASU = col_skip(),
+                                      PCR_FLUBLI= col_skip(),
+                                      FLUASU_OUT = col_skip(),
+                                      FLUASU_OUT = col_skip(),
+                                      FLUBLI_OUT= col_skip()
+                    )
+)
+                                      

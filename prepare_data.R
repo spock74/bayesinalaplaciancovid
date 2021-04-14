@@ -1,5 +1,5 @@
 library(readr)
-dados <- read_delim("INFLUD21-05-04-2021.csv", 
+dados <- read_delim("NFLUD21-05-04-2021.csv", 
                     ";", escape_double = FALSE,  
                     trim_ws = TRUE,
                     col_types = cols(
