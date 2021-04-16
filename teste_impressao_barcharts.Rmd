@@ -95,7 +95,7 @@ ddf <- discretize(ddf, method = 'interval')
 
 
 ```{r echo=FALSE}
-s1 <- ddf #sample_frac(ddf, .9, FALSE)
+s1 <- sample_frac(ddf, .1, FALSE)
 #s2 <- sample_frac(df, .9, FALSE)
 #s3 <- sample_frac(df, .9, FALSE)
 #s4 <- sample_frac(df, .9, FALSE)
@@ -109,7 +109,7 @@ bn1 <- mmhc(s1)
 
 ```{r echo=FALSE}
 #par(mfrow=c(2,2))
-graphviz.plot(bn1, shape='rectangle')
+graphviz.plot(bn1, shape='rectangle', main = 'Amostra de 40%')
 # graphviz.plot(bn2, shape='rectangle')
 # graphviz.plot(bn3, shape='rectangle')
 # graphviz.plot(bn4, shape='rectangle')
@@ -124,7 +124,7 @@ fitted.1 <- bn.fit(bn1, s1)
 # fitted.4 <- bn.fit(bn4, s4)
 
 #par(mfrow=c(2,2))
-graphviz.chart(fitted.1, type = "barprob", col = "darkblue", bg = "azure", bar.col = "darkblue")
+graphviz.chart(fitted.1, type = "barprob", col = "darkblue", bg = "azure", bar.col = "darkblue", main = 'Amostra de 40%')
 # graphviz.chart(fitted.2, type = "barprob", col = "darkblue", bg = "azure", bar.col = "darkblue")
 # graphviz.chart(fitted.3, type = "barprob", col = "darkblue", bg = "azure", bar.col = "darkblue")
 # graphviz.chart(fitted.4, type = "barprob", col = "darkblue", bg = "azure", bar.col = "darkblue")
@@ -134,11 +134,11 @@ graphviz.chart(fitted.1, type = "barprob", col = "darkblue", bg = "azure", bar.c
 ---------
 
 ```{r}
-boots.trap  <- 50
+boots.trap  <- 200
 str.diff = suppressMessages(boot.strength(s1, R = boots.trap, algorithm = "mmhc"))
 cat(paste('Threshold: ', attr(str.diff, "threshold")))
 avg.diff = averaged.network(str.diff)
-strength.plot(avg.diff, str.diff, shape = "rectangle", main = "Iterações = 50")
+strength.plot(avg.diff, str.diff, shape = "rectangle", main = "Iterações = 50, Amostra = 40%")
 ```
 
 
@@ -146,7 +146,7 @@ How can we compare the averaged network (avg.diff) with the network we originall
 
 ```{r}
 par(mfrow = c(1, 2))
-graphviz.compare(avg.diff, bn1, shape = "rectangle", main = c("DAG médio", "DAG único"))
+graphviz.compare(avg.diff, bn1, shape = "rectangle", main = c("DAG médio. Amostra = 40%", "DAG único. Amostra = 40%"))
 ```
 
 It is also a good idea to look at the threshold with respect to the distribution of the arc strengths: the averaged network is fairly dense (17 arcs for 9 nodes) and it is difficult to read.
@@ -154,5 +154,15 @@ It is also a good idea to look at the threshold with respect to the distribution
 plot(str.diff)
 abline(v = 0.75, col = "tomato", lty = 2, lwd = 2)
 abline(v = 0.85, col = "steelblue", lty = 2, lwd = 2)
+```
+
+The simpler network we obtain by setting threshold = 0.85 in averaged.network() is shown below; it is certainly easier to reason with from a qualitative point of view.
+```{r}
+par(mfrow = c(1, 2))
+avg.simpler = averaged.network(str.diff, threshold = 0.95)
+strength.plot(avg.diff, str.diff, shape = "rectangle", main = "Iterações = 50. Amostra = 40%")
+strength.plot(avg.simpler, str.diff, shape = "rectangle", main = 'Amostra 40%')
+
+
 ```
 
