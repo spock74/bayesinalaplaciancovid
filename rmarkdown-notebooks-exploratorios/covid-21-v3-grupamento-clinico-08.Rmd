@@ -152,7 +152,7 @@ graphviz.plot(bn8, main="N = 20000 4", shape = "rectangle")
 ---------
 
 ```{r echo=FALSE}
-n_amostras <- 49000
+n_amostras <- 4900
 bn9  <- suppressWarnings(mmhc(sample_n(tbl = dados_clinicos_no_na, size = n_amostras, replace = FALSE)))
 bn10 <- suppressWarnings(mmhc(sample_n(tbl = dados_clinicos_no_na, size = n_amostras, replace = FALSE)))
 bn11 <- suppressWarnings(mmhc(sample_n(tbl = dados_clinicos_no_na, size = n_amostras, replace = FALSE)))
@@ -180,6 +180,14 @@ graphviz.plot(bn16, main="N = Todos 92825", shape = "rectangle")
 
 ```
 
+```{r}
+x <- sample_n(tbl = dados_clinicos_no_na, size = 49000, replace = FALSE)
+dag <- mmhc(x)
+fitted = bn.fit(dag, x)
+
+# Netica style.
+graphviz.chart(fitted, grid = TRUE, bg = "beige", bar.col = "black")
+```
 
 ---------
 

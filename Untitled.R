@@ -1,25 +1,60 @@
 
+# dplyr remove columns with only NA
+dd %>% select_if(~!all(is.na(.))) 
+dd <- as.data.frame(dd)
 
-INFLUD21-29-03-2021.csv
+colunas <- c( 
+  'FEBRE', 
+  'TOSSE', 
+  'GARGANTA',
+  'DISPNEIA', 
+  'DESC_RESP',
+  'SATURACAO', 
+  'DIARREIA',
+  'VOMITO', 
+  #'OUTRO_SIN',
+  #'HOSPITAL', 
+  #'EVOLUCAO',
+  #'RENAL', 
+  #'DIABETES',
+  #'OBESIDADE', 
+  #'PERD_OLFT',
+  #'PERD_PALA', 
+  #'VACINA',
+  #'CLASSI_FIN',
+  #'CS_SEXO',
+  #'CS_GESTANT',
+  #'PUERPERA' ,
+  #'CARDIOPATI', 
+  #'HEMATOLOGI' ,
+  #'SIND_DOWN' ,
+  #'HEPATICA' ,
+  #'ASMA'#,
+  #'ANTIVIRAL'
+  #'TP_ANTIVIR'
+  #'RAIOX_RES'
+)
 
-dados <- read_csv("INFLUD21-29-03-2021.csv", 
-                  col_types = cols(
-                    FEBRE = col_factor(levels = c("1", "2", "9")), 
-                    TOSSE = col_factor(levels = c("1", "2", "9")), 
-                    GARGANTA = col_factor(levels = c("1", "2", "9")), 
-                    DISPNEIA = col_factor(levels = c("1", "2", "9")), 
-                    DESC_RESP = col_factor(levels = c("1", "2", "9")), 
-                    SATURACAO = col_factor(levels = c("1", "2", "9")), 
-                    DIARREIA = col_factor(levels = c("1", "2", "9")), 
-                    VOMITO = col_factor(levels = c("1", "2", "9")), 
-                    OUTRO_SIN = col_factor(levels = c("1", "2", "9")), 
-                    HOSPITAL = col_factor(levels = c("1", "2", "9")), 
-                    EVOLUCAO = col_factor(levels = c("1", "2", "3", "9")), 
-                    RENAL = col_factor(levels = c("1", "2", "9")), 
-                    DIABETES = col_factor(levels = c("1", "2", "9")), 
-                    OBESIDADE = col_factor(levels = c("1", "2", "9")), 
-                    CLASSI_OUT = col_character(), 
-                    PERD_OLFT = col_factor(levels = c("1", "2", "9")), 
-                    PERD_PALA = col_factor(levels = c("1", "2", "9")), 
-                    VACINA = col_factor(levels = c("1", "2", "9")), 
-                    CLASSI_FIN = col_factor(levels = c("1", "2", "3", "4", "5"))))
+# separar grupo de variaveis para analise
+colunas_clinicas <- dd[, colunas]
+# POR FIM, FUNCOES DE BNLEARN NAO ACEITAM O TIPO TIBBLE (DE DPLYR):
+dados_clinicos <- as.data.frame(colunas_clinicas)
+nrow(dados_clinicos)
+dados_clinicos_no_na <- na.omit(dados_clinicos)
+nrow(dados_clinicos_no_na)
+class(dados_clinicos)
+
+
+
+
+glimpse(dados_clinicos_no_na)
+#convert all coluns to factors
+df <- dados_clinicos_no_na
+df <- df %>% mutate_if(is.double,as.factor)
+df <- df %>% mutate_if(is.character,as.factor)
+glimpse(df)
+
+s1 <- sample_n(df, 10000, FALSE)
+bn1 <- mmhc(s1)
+fitted.1 <- bn.fit(bn1, s1)
+graphviz.chart(fitted.1)

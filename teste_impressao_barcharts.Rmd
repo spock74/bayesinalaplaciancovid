@@ -1,0 +1,129 @@
+---
+title: "Teste Melhor Impressão de Barcharts"
+author: "José Elvano Moraes"
+date: "4/15/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, echo=FALSE}
+suppressPackageStartupMessages(expr = library(tidyverse))
+suppressPackageStartupMessages(expr = library(bnlearn))
+suppressPackageStartupMessages(expr = library(bnstruct))
+suppressPackageStartupMessages(expr = library(readr))
+suppressPackageStartupMessages(expr = library(Rgraphviz))
+suppressPackageStartupMessages(expr = library(gRain))
+suppressPackageStartupMessages(expr = library(Rmpfr))
+```
+
+
+```{r echo=FALSE}
+library(readr)
+dd <- read_delim("dados/INFLUD21-05-04-2021 copy.csv", 
+    ";", escape_double = FALSE, trim_ws = TRUE)
+```
+
+
+```{r echo=FALSE}
+colunas <- c( 
+  'NU_IDADE_N',
+  'TP_IDADE',
+  'FEBRE', 
+  'TOSSE', 
+  'GARGANTA',
+  'DISPNEIA', 
+  'DESC_RESP',
+  'SATURACAO', 
+  #'DIARREIA',
+  #'VOMITO', 
+  #'OUTRO_SIN',
+  #'HOSPITAL', 
+  'EVOLUCAO',
+  #'RENAL', 
+  'DIABETES',
+  'OBESIDADE', 
+  'PERD_OLFT',
+  'PERD_PALA', 
+  #'VACINA',
+  'CLASSI_FIN',
+  #'CS_SEXO',
+  #'CS_GESTANT',
+  #'PUERPERA' ,
+  'CARDIOPATI',
+  'SUPORT_VEN'
+  #'HEMATOLOGI' ,
+  #'SIND_DOWN' ,
+  #'HEPATICA' ,
+  #'ASMA'#,
+  #'ANTIVIRAL'
+  #'TP_ANTIVIR'
+  #'RAIOX_RES'
+)
+```
+
+```{r echo=FALSE}
+# separar grupo de variaveis para analise
+df <- dd[, colunas] %>%
+  rename(IDADE = NU_IDADE_N) %>%
+  filter(CLASSI_FIN == 5) %>%
+  na.omit(df) %>%
+  filter(TP_IDADE == 3) %>%
+  mutate_if(is.double,as.factor)  %>%
+  mutate_if(is.character,as.factor) %>%
+  select(-TP_IDADE)
+  
+  df$CLASSI_FIN <- NULL
+
+  df$IDADE = as.double(df$IDADE)
+  df <- as.data.frame(df)
+#rm(dd)
+glimpse(df)
+```
+
+```{r echo=FALSE}
+# discretize idade
+
+df <- discretize(df, method = 'interval') 
+
+```
+
+
+```{r echo=FALSE}
+s1 <- sample_frac(df, .9, FALSE)
+#s2 <- sample_frac(df, .9, FALSE)
+#s3 <- sample_frac(df, .9, FALSE)
+#s4 <- sample_frac(df, .9, FALSE)
+
+bn1 <- mmhc(s1)
+#bn2 <- mmhc(s2)
+#bn3 <- mmhc(s3)
+#bn4 <- mmhc(s4)
+```
+
+
+```{r echo=FALSE}
+#par(mfrow=c(2,2))
+graphviz.plot(bn1, shape='rectangle')
+# graphviz.plot(bn2, shape='rectangle')
+# graphviz.plot(bn3, shape='rectangle')
+# graphviz.plot(bn4, shape='rectangle')
+
+```
+
+
+```{r echo=FALSE}
+fitted.1 <- bn.fit(bn1, s1)
+# fitted.2 <- bn.fit(bn2, s2)
+# fitted.3 <- bn.fit(bn3, s3)
+# fitted.4 <- bn.fit(bn4, s4)
+
+#par(mfrow=c(2,2))
+graphviz.chart(fitted.1, type = "barprob", col = "darkblue", bg = "azure", bar.col = "darkblue")
+# graphviz.chart(fitted.2, type = "barprob", col = "darkblue", bg = "azure", bar.col = "darkblue")
+# graphviz.chart(fitted.3, type = "barprob", col = "darkblue", bg = "azure", bar.col = "darkblue")
+# graphviz.chart(fitted.4, type = "barprob", col = "darkblue", bg = "azure", bar.col = "darkblue")
+
+```
