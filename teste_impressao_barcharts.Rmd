@@ -176,7 +176,7 @@ The simpler network we obtain by setting threshold = 0.8 in averaged.network() i
 par(mfrow = c(1, 2))
 avg.simpler = averaged.network(str.diff, threshold = 0.75)
 strength.plot(avg.diff, str.diff, shape = "rectangle", main = paste("Iterações = ", boots.trap, " Thr = ", attr(str.diff, "threshold")))
-strength.plot(avg.simpler, str.diff, shape = "rectangle", main = 'Iterações = 200. Simplificado. Thr = 0.75')
+strength.plot(avg.simpler, str.diff, shape = "rectangle", main = 'Iterações = 100 Thr = 0.75')
 
 
 ```
