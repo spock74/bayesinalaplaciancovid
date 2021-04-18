@@ -1,0 +1,142 @@
+---
+title: "Inferencia. Fase I"
+author: "José Elvano Moraes"
+date: "17/04/2021"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r libraries, echo=FALSE}
+suppressPackageStartupMessages(expr = library(tidyverse))
+suppressPackageStartupMessages(expr = library(bnlearn))
+suppressPackageStartupMessages(expr = library(bnstruct))
+suppressPackageStartupMessages(expr = library(readr))
+suppressPackageStartupMessages(expr = library(Rgraphviz))
+suppressPackageStartupMessages(expr = library(gRain))
+suppressPackageStartupMessages(expr = library(Rmpfr))
+```
+
+# Redes Bayesianas
+Probabilistic reasoning on BNs works in the framework of Bayesian statistics and focuses on the computation of posterior probabilities or densities.
+For example, suppose we have learned a BN B with DAG G and parameters Θ. We want to use B to investigate the effects of a new piece of evidence E using the knowledge encoded in B, that is, to investigate the posterior distribution
+
+$$P(\mathbf{X} | \mathbf{E},\mathbf{\mathcal{B}})=P(\mathbf{X} | \mathbf{E},\mathbf{G},\Theta)$$
+Questions that can be asked are called queries and are typically an event of interest. The two most common queries are conditional probability (CPQ) and maximum a posteriori (MAP) queries, also known as most probable explanation (MPE) queries
+
+```{r echo=FALSE}
+rm(list=ls())
+```
+
+
+```{r echo=FALSE}
+load(file = 'inferencia-01.RData')
+#ls()
+```
+## some content here
+```{r}
+glimpse(ddf)
+```
+
+## some content here
+```{r echo=FALSE}
+par(mfrow = c(1, 2))
+graphviz.plot(bn.no.wl, 
+              shape='rectangle', 
+              highlight = NULL, 
+              main = 'DAG sem WL')
+graphviz.plot(bn.wl, 
+              shape='rectangle', 
+              highlight = list(arcs = wl), 
+              main = 'DAG com imposição de uma WL')
+```
+
+## some content here
+```{r echo=FALSE}
+par(mfrow=c(1,2))
+graphviz.chart(fitted.no.wl,
+               type = "barprob", 
+               col = "darkblue",
+               bg = "azure", 
+               bar.col = "darkblue", 
+               main = "DAG sem WL")
+
+graphviz.chart(fitted.wl,  
+               type = "barprob", 
+               col = "darkblue", 
+               bg = "azure", 
+               bar.col = "darkblue", 
+               main = "DAG com WL")
+```
+
+## some content here
+```{r echo=FALSE}
+## Obtendo o DAG médio: fase de Bootstrap usando 300 ciclos
+options(digits=2)
+
+thr <- paste('Thr: ', attr(str.diff, "threshold"))
+
+strength.plot(avg.diff, 
+              str.diff, 
+              shape = "rectangle", 
+              main = paste("Iter = ", boots.trap, thr))
+
+```
+
+
+## some content here
+```{r echo=FALSE}
+par(mfrow = c(1, 2))
+graphviz.compare(avg.diff,
+                 bn.no.wl,
+                 shape = "rectangle",
+                 main = c("DAG médio", "DAG único sem WL"))
+```
+
+## some content here
+```{r echo=FALSE}
+par(mfrow = c(1, 2))
+graphviz.compare(avg.diff,
+                 bn.wl,
+                 shape = "rectangle",
+                 main = c("DAG médio", "DAG único com WL"))
+```
+
+# DAG mínimo obtido
+```{r}
+avg.diff
+avg.simpler
+```
+```{r echo=FALSE}
+mb.diff <-  mb(avg.diff, 'EVOLUCAO')
+mb.simpler <- mb(avg.simpler, 'EVOLUCAO')
+
+par(mfrow = c(1, 2))
+graphviz.plot(x = avg.diff, 
+              shape = 'rectangle', 
+              highlight = list(nodes=mb.diff, 
+                               col = "darkblue", 
+                               fill = "lightblue") )
+graphviz.plot(x = avg.simpler, 
+              shape = 'rectangle', 
+              highlight = list(nodes=mb.simpler, 
+                               col = "darkblue", 
+                               fill = "lightblue") )
+```
+
+
+
+## some content here
+```{r  echo=FALSE}
+# save(list = ls(all.names = TRUE), 
+#      file = "inferencia-01.RData", 
+#      envir = .GlobalEnv)
+```
+
