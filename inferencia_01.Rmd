@@ -3,10 +3,10 @@ title: "Inferencia. Fase I"
 author: "José Elvano Moraes"
 date: "17/04/2021"
 output:
-  pdf_document: 
-    latex_engine: xelatex
   html_document:
     df_print: paged
+  pdf_document: 
+    latex_engine: xelatex
 ---
 
 ```{r setup, include=FALSE}
@@ -304,22 +304,77 @@ querygrain(jedu,
 # Simulação
 
 ```{r}
-amostra.simulada = cpdist(fitt3, nodes = c("IDADE", "RENAL", "EVOLUCAO", "ANTIVIRAL"), evidence = UTI == "1")
+#amostra.simulada = cpdist(fitt3, nodes = c("IDADE", "RENAL", "EVOLUCAO", "ANTIVIRAL"), evidence = UTI == "1")
 ``` 
 
 ```{r}
-ggplot(amostra.simulada, aes(IDADE)) + geom_histogram(stat = "count") + ylim(0, 4000)
+#ggplot(amostra.simulada, aes(IDADE)) + geom_histogram(stat = "count") + ylim(0, 4000)
 ```
 
 ```{r}
-amostra.simulada = cpdist(fitt3, nodes = c("IDADE", "RENAL", "EVOLUCAO", "ANTIVIRAL"), evidence = UTI == "2")
+#amostra.simulada = cpdist(fitt3, nodes = c("IDADE", "RENAL", "EVOLUCAO", "ANTIVIRAL"), evidence = UTI == "2")
 ```
 
 ```{r}
-ggplot(amostra.simulada, aes(IDADE)) + geom_histogram(stat = "count") + ylim(0, 4000)
+#ggplot(amostra.simulada, aes(IDADE)) + geom_histogram(stat = "count") + ylim(0, 4000)
 ```
 
 ```{r}
+bn.wl.fit <- bn.fit(bn.wl, amostra.90pc.seed.42)
+```
 
+
+```{r}
+nodos <- c("OBESIDADE", "DIABETES", 
+           "EVOLUCAO", "CARDIOPATI", "SUPORT_VEN", 
+           "IDADE")
+
+nodos.2 <- c("IDADE","FEBRE","GARGANTA","SATURACAO",
+             "EVOLUCAO","RENAL","DIABETES","OBESIDADE",
+             "PERD_OLFT", "PERD_PALA", "NEUROLOGIC", 
+             "PNEUMOPATI", 
+             #"UTI", 
+             "CARDIOPATI", 
+             "SUPORT_VEN", "ASMA","ANTIVIRAL")
+
+amostra.simulada = cpdist(bn.wl.fit, 
+                          nodes = nodos, 
+                          evidence = (UTI == "2"))
+amostra.simulada.2 = cpdist(bn.wl.fit, 
+                          nodes = nodos.2, 
+                          evidence = (UTI == "2"))
+
+amostra.real <- dplyr::filter(ddf, UTI == 1)  
+
+amostra.real.1 <- sample_n(amostra.real, 
+                         size = nrow(amostra.simulada))[,nodos]
+
+amostra.real.2 <- sample_n(amostra.real, 
+                           size = nrow(amostra.simulada.2))[,nodos.2]
+```
+
+
+```{r}
+amostra.simulada.2 <- na.omit(amostra.simulada.2)
+rede.simulada.2 <- mmhc(amostra.simulada.2)
+rede.real.2 <- mmhc(amostra.real.2)
+```
+
+
+```{r}
+par(mfrow = c(1, 2))
+graphviz.chart(bn.fit(rede.simulada.2, amostra.simulada.2),  
+               type = "barprob", 
+               col = "darkblue", 
+               bg = "azure", 
+               bar.col = "darkblue", 
+               main = "DAG amostra simulada")
+
+graphviz.chart(bn.fit(rede.real.2, amostra.real.2),  
+               type = "barprob", 
+               col = "darkblue", 
+               bg = "azure", 
+               bar.col = "darkblue", 
+               main = "DAG amostra real")
 ```
 
