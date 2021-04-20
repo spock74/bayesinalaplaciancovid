@@ -1,18 +1,9 @@
 ---
-title: "Inferencia. Fase I"
+title: "Predição"
 author: "José Elvano Moraes"
-date: "17/04/2021"
-output:
-  html_document:
-    df_print: paged
-  pdf_document: 
-    latex_engine: xelatex
+date: "4/20/2021"
+output: pdf_document
 ---
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 
 ```{r libraries, echo=FALSE}
 suppressPackageStartupMessages(expr = library(tidyverse))
@@ -25,6 +16,7 @@ suppressPackageStartupMessages(expr = library(Rmpfr))
 ```
 
 # Redes Bayesianas
+
 Probabilistic reasoning on BNs works in the framework of Bayesian statistics and focuses on the computation of posterior probabilities or densities.
 For example, suppose we have learned a BN B with DAG G and parameters Θ. We want to use B to investigate the effects of a new piece of evidence E using the knowledge encoded in B, that is, to investigate the posterior distribution
 
@@ -43,110 +35,10 @@ rm(list=ls())
 
 ```{r echo=FALSE}
 load(file = 'inferencia-01.RData')
-#ls()
-```
-## some content here
-```{r}
-glimpse(ddf)
-```
-
-## some content here
-```{r echo=FALSE}
-par(mfrow = c(1, 2))
-graphviz.plot(bn.no.wl, 
-              shape='rectangle', 
-              highlight = NULL, 
-              main = 'DAG sem WL')
-graphviz.plot(bn.wl, 
-              shape='rectangle', 
-              highlight = list(arcs = wl), 
-              main = 'DAG com imposição de uma WL')
-```
-
-## some content here
-```{r echo=FALSE}
-par(mfrow=c(1,2))
-graphviz.chart(fitted.no.wl,
-               type = "barprob", 
-               col = "darkblue",
-               bg = "azure", 
-               bar.col = "darkblue", 
-               main = "DAG sem WL")
-
-graphviz.chart(fitted.wl,  
-               type = "barprob", 
-               col = "darkblue", 
-               bg = "azure", 
-               bar.col = "darkblue", 
-               main = "DAG com WL")
-```
-
-## DAG médio e *força da correlação* entre pares de variáveis
-```{r echo=FALSE}
-## Obtendo o DAG médio: fase de Bootstrap usando 300 ciclos
-options(digits=2)
-
-thr <- paste('Thr: ', attr(str.diff, "threshold"))
-
-strength.plot(avg.diff, 
-              str.diff, 
-              sub = "A espessura dos arcos representa a correlação de Pearson entre variáveis",
-              shape = "rectangle", 
-              main = paste("Iter = ", boots.trap, thr))
-
+ls()
 ```
 
 
-# Descrição das redes
-```{r}
-avg.diff
-avg.simpler
-```
-
-## Dag médio *versus* DAG único
-```{r echo=FALSE}
-par(mfrow = c(1, 2))
-graphviz.compare(avg.diff,
-                 bn.no.wl,
-                 shape = "rectangle",
-                 main = c("DAG médio", "DAG único sem WL"))
-```
-
-```{r echo=FALSE}
-par(mfrow = c(1, 2))
-graphviz.compare(avg.diff,
-                 bn.wl,
-                 shape = "rectangle",
-                 main = c("DAG médio", "DAG único com WL"))
-```
-
-
-## DAG médio *versus* simplificado
-
-DAG médio obtido pelo processo de bootstrapping e DAG *simplicada* no qual desenhou-se somente os arcos com *strenght*, (correlação de Pearson) acima de 0.95.
-
-Os nodos coloridos formam o *markov blanket* da variável EVOLUCAO, ou seja, os nodos suficientes para descrevere completamente a distribuição estatistica da variável
-
-```{r echo=FALSE}
-mb.diff <-  mb(avg.diff, 'EVOLUCAO')
-mb.simpler <- mb(avg.simpler, 'EVOLUCAO')
-
-par(mfrow = c(1, 2))
-graphviz.plot(x = avg.diff, 
-              shape = 'rectangle', 
-              main = "Rede Média",
-              highlight = list(nodes=mb.diff, 
-                               col = "darkblue", 
-                               fill = "lightblue") )
-graphviz.plot(x = avg.simpler, 
-              shape = 'rectangle', 
-              main = "Rede simpificada",
-              highlight = list(nodes=mb.simpler, 
-                               col = "darkblue", 
-                               fill = "lightgreen") )
-```
-
-## Performing likelihood weighting 
 
 TODO
 
@@ -304,32 +196,9 @@ querygrain(jedu,
 # Simulação
 
 ```{r}
-#amostra.simulada = cpdist(fitt3, nodes = c("IDADE", "RENAL", "EVOLUCAO", "ANTIVIRAL"), evidence = UTI == "1")
-``` 
-
-```{r}
-#ggplot(amostra.simulada, aes(IDADE)) + geom_histogram(stat = "count") + ylim(0, 4000)
-```
-
-```{r}
-#amostra.simulada = cpdist(fitt3, nodes = c("IDADE", "RENAL", "EVOLUCAO", "ANTIVIRAL"), evidence = UTI == "2")
-```
-
-```{r}
-#ggplot(amostra.simulada, aes(IDADE)) + geom_histogram(stat = "count") + ylim(0, 4000)
-```
-
-```{r}
 bn.wl.fit <- bn.fit(bn.wl, amostra.90pc.seed.42)
-```
 
-
-```{r}
-nodos <- c("OBESIDADE", "DIABETES", 
-           "EVOLUCAO", "CARDIOPATI", "SUPORT_VEN", 
-           "IDADE")
-
-nodos.2 <- c("IDADE","FEBRE","GARGANTA","SATURACAO",
+nodos <- c("IDADE","FEBRE","GARGANTA","SATURACAO",
              "EVOLUCAO","RENAL","DIABETES","OBESIDADE",
              "PERD_OLFT", "PERD_PALA", "NEUROLOGIC", 
              "PNEUMOPATI", 
@@ -337,104 +206,86 @@ nodos.2 <- c("IDADE","FEBRE","GARGANTA","SATURACAO",
              "CARDIOPATI", 
              "SUPORT_VEN", "ASMA","ANTIVIRAL")
 
-amostra.simulada = cpdist(bn.wl.fit, 
+amostra.sim = cpdist(bn.wl.fit, 
                           nodes = nodos, 
-                          evidence = (UTI == "2"))
-amostra.simulada.2 = cpdist(bn.wl.fit, 
-                          nodes = nodos.2, 
                           evidence = (UTI == "2"))
 
 amostra.real <- dplyr::filter(ddf, UTI == 1)  
 
-amostra.real.1 <- sample_n(amostra.real, 
-                         size = nrow(amostra.simulada))[,nodos]
-
-amostra.real.2 <- sample_n(amostra.real, 
-                           size = nrow(amostra.simulada.2))[,nodos.2]
+amostra.real <- sample_n(amostra.real, 
+                         size = nrow(amostra.sim))[,nodos]
 ```
 
 
 ```{r}
-amostra.simulada.2 <- na.omit(amostra.simulada.2)
-rede.simulada.2 <- mmhc(amostra.simulada.2)
-rede.real.2 <- mmhc(amostra.real.2)
+amostra.sim <- na.omit(amostra.simulada.2)
+rede.sim <- mmhc(amostra.simulada.2)
+rede.real <- mmhc(amostra.real.2)
+```
+
+## Rede média real versus simulada
+```{r}
+boots.trap  <- 300
+
+forca.sim = boot.strength(amostra.sim, 
+                         R = boots.trap, 
+                         algorithm = "mmhc")
+
+forca.real = boot.strength(amostra.real, 
+                         R = boots.trap, 
+                         algorithm = "mmhc")
+
+rede.media.sim = averaged.network(forca.sim)
+rede.media.real = averaged.network(forca.real)
+
+thr.sim <- paste('Thr: ', attr(forca.sim, "threshold"))
+thr.real <- paste('Thr: ', attr(forca.real, "threshold"))
 ```
 
 
 ```{r}
 par(mfrow = c(1, 2))
-graphviz.chart(bn.fit(rede.simulada.2, amostra.simulada.2),  
-               type = "barprob", 
-               col = "darkblue", 
-               bg = "azure", 
-               bar.col = "darkblue", 
-               main = "DAG amostra simulada")
-
-graphviz.chart(bn.fit(rede.real.2, amostra.real.2),  
-               type = "barprob", 
-               col = "darkblue", 
-               bg = "azure", 
-               bar.col = "darkblue", 
-               main = "DAG amostra real")
-```
-# Trabalhando com cpquery
-
-```{r}
-# idadee\; [1,37] (37,73] (73,109]
+strength.plot(rede.media.sim, 
+              forca.sim, 
+              shape = "rectangle", 
+              main = paste("SIM. ", "Thr = " , thr.sim))
 
 
-fitt.1 <- bn.fit(avg.diff, amostra.90pc.seed.42)
 
-prob.uti.1 <- cpquery(fitt.1, 
-         evidence = list( 
-           #'SATURACAO' = "1",
-               #(IDADE == "(37,73]") &
-               # (FEBRE == 1) &
-               #  (DIABETES == 2) &
-               #  (RENAL == 2) &
-               "UTI" = "1" #,
-               #'SUPORT_VEN' = "1" 
-               ),
-         event =  (EVOLUCAO == 2) ,
-         method = "lw")
-prob.uti.1
+strength.plot(rede.media.real, 
+              forca.real, 
+              shape = "rectangle", 
+              main = paste("REAL", "Thr = ", thr.real))
 ```
 
-```{r}
-x <- amostra.90pc.seed.42 %>% filter(
-                                    #SATURACAO == 1, 
-                                     UTI == 1#, 
-                                     #FEBRE == 1, 
-                                     #DIABETES == 2, 
-                                     #RENAL == 2,
-                                     #IDADE == "(37,73]",
-                                     #SUPORT_VEN == 1
-                                     )
-nrow(x)
-a <- filter(x, EVOLUCAO == 2)
-nrow(a)
-
-prb <- nrow(a)/nrow(x)
-prb
-
-prob.uti.1/prb
-```
-```{r}
-set.seed(42)
-dd <- ddf
-nrow(dd)
-# 76666
-ii <- sample(1:76666, 76666, replace=FALSE)
-dd$ii <- ii
-
-ii <- sample(1:76000, 76000, replace = FALSE)
-amostra <- dd[ii, ]
-
-rede <- mmhc(amostra)
-
-```
 
 ```{r echo=FALSE}
+# fitted.real <- bn.fit(rede.media.real, amostra.real)
+# fitted.sim <- bn.fit(rede.media.real, amostra.real)
+# 
+# par(mfrow = c(1, 2))
+# graphviz.chart(bn.wl.fit(rede.sim, amostra.simulada),  
+#                type = "barprob", 
+#                col = "darkblue", 
+#                bg = "azure", 
+#                bar.col = "darkblue", 
+#                main = "DAG amostra simulada")
+# 
+# graphviz.chart(bn.fit(rede.real, amostra.real),  
+#                type = "barprob", 
+#                col = "darkblue", 
+#                bg = "azure", 
+#                bar.col = "darkblue", 
+#                main = "DAG amostra real")
+```
+
+-------
+
+# Estimação
+
+## Aprender rede com 300 iteracoes de bootstrap
+```{r echo=TRUR}
+
 boots.trap  <- 300
 
 str.diff = boot.strength(amostra, 
@@ -449,28 +300,32 @@ strength.plot(rede.media,
               shape = "rectangle", 
               main = paste("Iter = ", boots.trap, thr))
 ```
-```{r}
 
-fitt.1 <- bn.fit(rede.media, amostra)
+
+```{r}
+fitt.1 <- bn.fit(rede.media.sim, amostra.sim)
 
 prob.uti.1 <- cpquery(fitt.1, 
          evidence = list( 
-               #'SATURACAO' = "1",
+               'SATURACAO' = "1",
                'IDADE' = "(37,73]" ,
-               # (FEBRE == 1) &
+               'FEBRE' = "1",
                #  (DIABETES == 2) &
                #  (RENAL == 2) &
-               "UTI" = "1" ,
+               #"UTI" = "1" ,
                'SUPORT_VEN' = "3" 
                ),
          event =  (EVOLUCAO == 2) ,
          method = "lw")
 prob.uti.1
+```
 
-x <- amostra %>% filter(
-                                    # SATURACAO == 1, 
-                                     UTI == 1, 
-                                     #FEBRE == 1, 
+
+```{r}
+x <- amostra.sim %>% filter(
+                                     SATURACAO == 1, 
+                                     #UTI == 1, 
+                                     FEBRE == 1, 
                                      #DIABETES == 2, 
                                      #RENAL == 2,
                                      IDADE == "(37,73]",
@@ -481,8 +336,32 @@ a <- filter(x, EVOLUCAO == 2)
 nrow(a)
 
 prb <- nrow(a)/nrow(x)
-prb
 
-prob.uti.1/prb
+100 - (prb - prob.uti.1)/prb*100
+```
+
+```{r}
+xr <- amostra.90pc.seed.42 %>% filter(
+                                     SATURACAO == 1, 
+                                     #UTI == 1, 
+                                     FEBRE == 1, 
+                                     #DIABETES == 2, 
+                                     #RENAL == 2,
+                                     IDADE == "(37,73]",
+                                     SUPORT_VEN == 3
+                                     )
+nrow(xr)
+ar <- filter(xr, EVOLUCAO == 2)
+nrow(ar)
+
+prbr <- nrow(ar)/nrow(xr)
+prbr
+```
+
+## Predicção, desempenho
+```{r}
+100 - (prbr - prb)/prbr*100
+
+100 - (prb - prob.uti.1)/prbr*100
 ```
 
