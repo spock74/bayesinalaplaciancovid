@@ -377,4 +377,26 @@ graphviz.chart(bn.fit(rede.real.2, amostra.real.2),
                bar.col = "darkblue", 
                main = "DAG amostra real")
 ```
+# Trabalhando com cpquery
+
+```{r}
+# idadee\; [1,37] (37,73] (73,109]
+
+
+evid.1 <- list(SATURACAO == 1, 
+               IDADE == `(73,109]`, 
+               UTI == 1,
+               SUPORT_VEN == 1)
+
+fitt.1 <- bn.fit(avg.diff, amostra.90pc.seed.42)
+
+prob.uti.1 <- cpquery(fitt.1, 
+         event = (EVOLUCAO == "1") ,
+         evidence =  (SATURACAO == "1" && 
+               IDADE == "`(73,109]`" &&  
+               UTI == "1" &&
+               SUPORT_VEN == "1"),
+         method = "lw",
+         n = 10000)
+```
 
