@@ -383,20 +383,41 @@ graphviz.chart(bn.fit(rede.real.2, amostra.real.2),
 # idadee\; [1,37] (37,73] (73,109]
 
 
-evid.1 <- list(SATURACAO == 1, 
-               IDADE == `(73,109]`, 
-               UTI == 1,
-               SUPORT_VEN == 1)
-
 fitt.1 <- bn.fit(avg.diff, amostra.90pc.seed.42)
 
 prob.uti.1 <- cpquery(fitt.1, 
-         event = (EVOLUCAO == "1") ,
-         evidence =  (SATURACAO == "1" && 
-               IDADE == "`(73,109]`" &&  
-               UTI == "1" &&
-               SUPORT_VEN == "1"),
-         method = "lw",
-         n = 10000)
+         evidence = list( 
+           #'SATURACAO' = "1",
+               #(IDADE == "(37,73]") &
+               # (FEBRE == 1) &
+               #  (DIABETES == 2) &
+               #  (RENAL == 2) &
+               "UTI" = "1" #,
+               #'SUPORT_VEN' = "1" 
+               ),
+         event =  (EVOLUCAO == 2) ,
+         method = "lw")
+prob.uti.1
 ```
+
+```{r}
+x <- amostra.90pc.seed.42 %>% filter(
+                                    #SATURACAO == 1, 
+                                     UTI == 1#, 
+                                     #FEBRE == 1, 
+                                     #DIABETES == 2, 
+                                     #RENAL == 2,
+                                     #IDADE == "(37,73]",
+                                     #SUPORT_VEN == 1
+                                     )
+nrow(x)
+a <- filter(x, EVOLUCAO == 2)
+nrow(a)
+
+prb <- nrow(a)/nrow(x)
+prb
+
+prob.uti.1/prb
+```
+
 
