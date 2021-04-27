@@ -65,7 +65,7 @@ INFLUD21_12_04_2021 <- readRDS('./dados/INFLUD21_12_04_2021.rds')
 
 ```{r}
 
-boots.trap  <- 10
+boots.trap  <- 200
 
 
 nodos <- c(  "CLASSI_FIN", 
