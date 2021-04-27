@@ -65,7 +65,7 @@ INFLUD21_12_04_2021 <- readRDS('./dados/INFLUD21_12_04_2021.rds')
 
 ```{r}
 
-boots.trap  <- 5
+boots.trap  <- 10
 
 
 nodos <- c(  "CLASSI_FIN", 
@@ -147,7 +147,7 @@ glimpse(ddf)
 ```{r echo=FALSE}
 nn <- nrow(ddf)
 
-n.test <- 5000
+n.test <- 10000
 n.learn <-  nn - n.test
 
 ii.learn <- sample(x = 1:nn, size = n.learn, replace = FALSE)
