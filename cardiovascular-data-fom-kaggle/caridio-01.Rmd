@@ -14,16 +14,16 @@ library(tidyverse)
 library(haven)
 library(bnlearn)
 library(Rgraphviz)
-
+suppressPackageStartupMessages(expr = library(gRain))
+suppressPackageStartupMessages(expr = library(Rmpfr))
 library(readr)
 ```
 
 
 ```{r}
-library(readr)
-cardio_train <- read_csv("cardio_train.csv", 
+cardio <- read_csv("cardio_train.csv", 
     col_types = cols(id = col_integer(), 
-                     age = col_integer(), 
+                     age = col_number(), 
                      gender = col_factor(levels = c("1", "2")), 
                      height = col_number(), 
                      weight = col_number(), 
@@ -38,67 +38,156 @@ cardio_train <- read_csv("cardio_train.csv",
 
 # genero = '1'
 # genero = '2'
-# 
-
-# cardio = filter(cardio_train, ap_hi>ap_lo, ap_lo > 40, ap_lo<200, ap_hi>60, ap_hi<300)
-set.seed(2)
-amostra = sample_frac(cardio_train, size = .9, replace = F)
-
-ccc <- select(amostra, age, height, weight, ap_lo, ap_hi)
-ccc2 <- discretize(ccc, method = 'hartemink', breaks = 4)
-dados <- cbind(select(amostra, -age, -height, -weight, -ap_lo, -ap_hi), ccc2)
-summary(dados)
+#
 ```
+
 ```{r}
-ddf <- select(dados, -id)
+
+colunas <- c("age",         
+             "gender",      
+             "height",      
+             "weight",      
+             "ap_hi",       
+             "ap_lo",       
+             "cholesterol", 
+             "gluc",        
+             "smoke",      
+             "alco",        
+             "active",      
+             "cardio") 
+
+# colunas.para.inferencia <- cardio[,colunas]
+# 
+# dd<-na.omit(colunas.para.inferencia)
+# 
+# glimpse(dd)
+```
+
+```{r}
+dd = filter(cardio, ap_hi>ap_lo, ap_lo > 0, ap_lo<300, ap_hi>0, ap_hi<300)
+set.seed(2)
+
+
+ccc <- select(dd, age, height, weight, ap_lo, ap_hi)
+ccc2 <- discretize(ccc, method = 'hartemink', breaks = 4)
+ddf <- cbind(select(dd, -age, -height, -weight, -ap_lo, -ap_hi), ccc2)
+ddf <-na.omit(ddf)
+ddf$id<-NULL
+
+amostra = ddf[1:7000,]#sample_frac(dd, size = .9, replace = F)
+amostra.test = ddf[7001:nrow(dd),]
+amostra.test<-na.omit(amostra.test)
+summary(ddf)
 ```
 
 ```{r}
 bn1 <- mmhc(ddf)
 ```
-```{r}
-graphviz.plot(bn1, shape = 'rectangle')
-```
 
 ```{r}
 # -----------------------------------------------------------------------------
-R = 10
-graphviz.plot(bn1, shape = 'rectangle', main = "Markov Blanket - GLUCOSE", 
-              sub = "Feminino")
-              
-
-#fitted = bn.fit(bn1, ddf)
-#graphviz.chart(fitted, grid = TRUE, bg = "beige", bar.col = "black")
-```
-
-
-```{r}
-str.diff_f = boot.strength(ddf, R = R, algorithm = "mmhc")
+graphviz.plot(bn1, shape = 'rectangle', 
+              main = "Markov Blanket - CARDIO",
+              highlight = list(nodes=mb(bn1, 'cardio'), fill="lightblue"))
 ```
 
 ```{r}
+R = 100
+arc.strength = boot.strength(ddf, R = R, algorithm = "mmhc")
 
-rede.media = averaged.network(str.diff_f)
+rede.media = averaged.network(arc.strength)
 strength.plot(rede.media, 
-              str.diff_f, 
+              arc.strength, 
+              shape = "rectangle")
+
+
+arc.strength.test = boot.strength(amostra.test, R = R, algorithm = "mmhc")
+
+rede.media.test = averaged.network(arc.strength.test)
+strength.plot(rede.media.test, 
+              arc.strength.test, 
               shape = "rectangle")
 ```
 
+
+```{r}
+graphviz.plot(rede.media, shape = 'rectangle', 
+              main = "Markov Blanket - CARDIO",
+              highlight = list(nodes=mb(bn1, 'cardio'), fill="lightblue"))
+```
+```{r}
+cat("pressão:")
+unique(ddf$ap_hi)
+
+cat("peso:")
+unique(ddf$weight)
+
+cat("idade:")
+unique(ddf$age)
+
+cat("colesterol:")
+unique(ddf$cholesterol)
+```
+
+
+
 ```{r}
 rede.media.dagged <- pdag2dag(rede.media, 
-                                   ordering = names(ddf))
+                              ordering = names(ddf))
 
 fitt1 <- bn.fit(rede.media.dagged, ddf)
 junction = compile(as.grain(fitt1))
 jedu = setEvidence(propagate = FALSE, junction, 
                    node = c("ap_hi",
-                            "weight", 
-                            "cholesterol"), 
-                   states = c("(140,180]",
-                              "(67,80]", 
-                              "3") )
+                            "age",
+                            "cholesterol"#, 
+                           # "active"
+                            ), 
+                   states = c("(110,120]",
+                              "(20953,23670]",
+                              #"(67,80]", 
+                              "1"#,
+                              #"0"
+                              ) )
 querygrain(jedu, 
-           nodes = c("CARDIO"),
-           type = "marginal")
+           nodes = c("cardio"))
+```
+
+# predição
+```{r}
+rede.media.test.dagged <- pdag2dag(rede.media.test, 
+                              ordering = names(amostra.test))
+
+
+fitt1 <- bn.fit(rede.media.test.dagged, amostra.test)
+junction = compile(as.grain(fitt1))
+nodos <- amostra.test[, mb(bn1, 'cardio')]
+nodes <-  mb(bn1, 'cardio')
+for (ii in c(1:100)) {
+  node <- list(nodos[ii,])
+  age <- amostra.test
+  
+  jedu = setEvidence(propagate = FALSE, junction, 
+                   node = nodes, 
+                   states = c(as.character(nodos[ii,1]), 
+                              as.character(nodos[ii,2]), 
+                              as.character(nodos[ii,3]),
+                              as.character(nodos[ii,4]), 
+                              as.character(nodos[ii,5])))
+  
+  querygrain(jedu, 
+           nodes = c("cardio"))
+}
+```
+
+
+
+```{r}
+x = filter(ddf,            "ap_hi" == "(120,140]",
+                            "weight" == "(76,117.01]", 
+                            "age" == "(67,80]",
+                            "cholesterol" == "2")
+
+
 ```
 
