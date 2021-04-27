@@ -2,7 +2,9 @@
 title: "Predição"
 author: "José Elvano Moraes"
 date: "4/20/2021"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r libraries, echo=FALSE}
@@ -123,6 +125,12 @@ Sabe-se que paciente **está** no CTI, estima-se qual a distribuição marginal 
 - SUPORT_VEN: não
 
 ```{r echo=FALSE}
+amostra.90pc.seed.42.learn <- amostra.90pc.seed.42[1:50000, ]
+amostra.90pc.seed.42.test <- amostra.90pc.seed.42[50001:68999,]
+```
+
+
+```{r echo=FALSE}
 #UTI
 #  1-Sim 
 #  2-Nao 
@@ -133,8 +141,7 @@ Sabe-se que paciente **está** no CTI, estima-se qual a distribuição marginal 
 # 2-Sim, nao invasivo 
 # 3-Nao
 # 9-Ignorado
-
-fitt2 <- bn.fit(avg.simpler, amostra.90pc.seed.42)
+fitt2 <- bn.fit(avg.diff, amostra.90pc.seed.42.learn[1:50000,])
 junction = compile(as.grain(fitt2))
 jedu = setEvidence(propagate = FALSE, junction, node = c("UTI", "SUPORT_VEN"), states = c("2", "3") )
 querygrain(jedu, 
@@ -158,8 +165,8 @@ querygrain(jedu,
 # 3-Nao
 # 9-Ignorado
 
-fitt3 <- bn.fit(avg.simpler, amostra.90pc.seed.42)
-junction = compile(as.grain(fitt))
+fitt3 <- bn.fit(avg.diff, amostra.90pc.seed.42.learn)
+junction = compile(as.grain(fitt3))
 jedu = setEvidence(propagate = FALSE, junction, node = c("UTI", "SUPORT_VEN"), states = c("1", "1") )
 querygrain(jedu, 
            nodes = c("IDADE", "RENAL", "EVOLUCAO", "ANTIVIRAL"),
@@ -183,8 +190,8 @@ querygrain(jedu,
 # 3-Nao
 # 9-Ignorado
 
-fitt3 <- bn.fit(avg.simpler, amostra.90pc.seed.42)
-junction = compile(as.grain(fitt))
+fitt3 <- bn.fit(avg.simpler, amostra.90pc.seed.42.learn)
+junction = compile(as.grain(fitt3))
 jedu = setEvidence(propagate = FALSE, junction, node = c("UTI", "SUPORT_VEN"), states = c("1", "2") )
 querygrain(jedu, 
            nodes = c("IDADE", "RENAL", "EVOLUCAO", "ANTIVIRAL"),
@@ -196,35 +203,45 @@ querygrain(jedu,
 # Simulação
 
 ```{r}
-bn.wl.fit <- bn.fit(bn.wl, amostra.90pc.seed.42)
+bn.wl.fit <- bn.fit(bn.wl, amostra.90pc.seed.42.learn)
 
 nodos <- c("IDADE","FEBRE","GARGANTA","SATURACAO",
              "EVOLUCAO","RENAL","DIABETES","OBESIDADE",
-             "PERD_OLFT", "PERD_PALA", "NEUROLOGIC", 
-             "PNEUMOPATI", 
-             #"UTI", 
-             "CARDIOPATI", 
+             "PERD_OLFT", "PERD_PALA", "NEUROLOGIC",
+             "PNEUMOPATI",
+             "UTI",
+             "CARDIOPATI",
              "SUPORT_VEN", "ASMA","ANTIVIRAL")
-
-amostra.sim = cpdist(bn.wl.fit, 
-                          nodes = nodos, 
-                          evidence = (UTI == "2"))
-
-amostra.real <- dplyr::filter(ddf, UTI == 1)  
-
-amostra.real <- sample_n(amostra.real, 
-                         size = nrow(amostra.sim))[,nodos]
 ```
 
 
 ```{r}
-amostra.sim <- na.omit(amostra.simulada.2)
-rede.sim <- mmhc(amostra.simulada.2)
-rede.real <- mmhc(amostra.real.2)
+amostra.sim = cpdist(bn.wl.fit, 
+                          nodes = nodos, 
+                          evidence = (UTI == "1"),
+                     n = 50000)
+glimpse(amostra.sim)
+
+amostra.real <- dplyr::filter(amostra.90pc.seed.42.learn)
+# amostra.real <- dplyr::filter(amostra.90pc.seed.42.learn, UTI == 1)  
+amostra.real <- sample_n(amostra.real, 
+                         size = nrow(amostra.sim))[,nodos]
+glimpse(amostra.real)
+```
+
+
+```{r}
+amostra.real <- na.omit(amostra.real)
+amostra.sim <- na.omit(amostra.sim)
+rede.real <- mmhc(amostra.real)
+rede.sim <- mmhc(amostra.sim)
 ```
 
 ## Rede média real versus simulada
 ```{r}
+start_time <- Sys.time()
+cat(paste("N real:", nrow(amostra.real), "- N sim:", nrow(amostra.sim) ))
+
 boots.trap  <- 300
 
 forca.sim = boot.strength(amostra.sim, 
@@ -240,6 +257,9 @@ rede.media.real = averaged.network(forca.real)
 
 thr.sim <- paste('Thr: ', attr(forca.sim, "threshold"))
 thr.real <- paste('Thr: ', attr(forca.real, "threshold"))
+
+delta <- end_time <- Sys.time()
+cat(paste("Tempo para ", boots.trap, ":", delta))
 ```
 
 
@@ -280,88 +300,75 @@ strength.plot(rede.media.real,
 ```
 
 -------
+# Predição 
+```{r}
+rede.media.real.dagged <- pdag2dag(rede.media.real, 
+                                   ordering = names(amostra.real))
 
-# Estimação
+rede.media.sim.dagged <- pdag2dag(rede.media.sim, 
+                                  ordering = names(amostra.sim))
+```
 
-## Aprender rede com 300 iteracoes de bootstrap
-```{r echo=TRUR}
-
-boots.trap  <- 300
-
-str.diff = boot.strength(amostra, 
-                         R = boots.trap, 
-                         algorithm = "mmhc")
-
-rede.media = averaged.network(str.diff)
-thr <- paste('Thr: ', attr(str.diff, "threshold"))
-
-strength.plot(rede.media, 
-              str.diff, 
+```{r}
+par(mfrow = c(1, 2))
+strength.plot(rede.media.real.dagged, 
+              forca.sim, 
               shape = "rectangle", 
-              main = paste("Iter = ", boots.trap, thr))
+              main = paste("SIM. ", "Thr = " , thr.sim))
+
+strength.plot(rede.media.sim.dagged, 
+              forca.real, 
+              shape = "rectangle", 
+              main = paste("REAL", "Thr = ", thr.real))
 ```
 
 
 ```{r}
-fitt.1 <- bn.fit(rede.media.sim, amostra.sim)
+fitt.real<- bn.fit(rede.media.real.dagged, amostra.real)
+fitt.sim <- bn.fit(rede.media.sim.dagged, amostra.sim)
 
-prob.uti.1 <- cpquery(fitt.1, 
-         evidence = list( 
-               'SATURACAO' = "1",
-               'IDADE' = "(37,73]" ,
-               'FEBRE' = "1",
-               #  (DIABETES == 2) &
-               #  (RENAL == 2) &
-               #"UTI" = "1" ,
-               'SUPORT_VEN' = "3" 
-               ),
-         event =  (EVOLUCAO == 2) ,
-         method = "lw")
-prob.uti.1
+prob.pred.real <- cpquery(fitted = fitt.real, 
+                    event = (EVOLUCAO == "1") , 
+                    evidence = list(SUPORT_VEN = "3", IDADE="(37,73]"), 
+                    method = "lw")
+
+prob.pred.sim <- cpquery(fitted = fitt.sim, 
+                    event = (EVOLUCAO == "2") , 
+                    evidence = list(SUPORT_VEN = "3"), 
+                    method = "lw")
+###
+cat ("prob.pred:", prob.pred.real*100)
 ```
 
 
 ```{r}
-x <- amostra.sim %>% filter(
-                                     SATURACAO == 1, 
-                                     #UTI == 1, 
-                                     FEBRE == 1, 
-                                     #DIABETES == 2, 
-                                     #RENAL == 2,
-                                     IDADE == "(37,73]",
-                                     SUPORT_VEN == 3
-                                     )
-nrow(x)
-a <- filter(x, EVOLUCAO == 2)
-nrow(a)
+x <- amostra.90pc.seed.42.test %>% filter(
+                              #SATURACAO == 1, 
+                              #UTI == 1, 
+                              #FEBRE == 1, 
+                              #DIABETES == 2, 
+                              #RENAL == 2,
+                              IDADE == "(37,73]",
+                              SUPORT_VEN == 3
+                            )
 
-prb <- nrow(a)/nrow(x)
+a <- filter(x, EVOLUCAO == 1)
 
-100 - (prb - prob.uti.1)/prb*100
+
+prob.real <- nrow(a)/nrow(x)
+cat("prob.real:", prob.real*100)
+
 ```
 
-```{r}
-xr <- amostra.90pc.seed.42 %>% filter(
-                                     SATURACAO == 1, 
-                                     #UTI == 1, 
-                                     FEBRE == 1, 
-                                     #DIABETES == 2, 
-                                     #RENAL == 2,
-                                     IDADE == "(37,73]",
-                                     SUPORT_VEN == 3
-                                     )
-nrow(xr)
-ar <- filter(xr, EVOLUCAO == 2)
-nrow(ar)
 
-prbr <- nrow(ar)/nrow(xr)
-prbr
+
+```{r}
+# testar com 
 ```
 
-## Predicção, desempenho
-```{r}
-100 - (prbr - prb)/prbr*100
 
-100 - (prb - prob.uti.1)/prbr*100
+
+```{r}
+# outro metodo: usar setEvidence and then querygrain ao invez de cpquery
 ```
 
