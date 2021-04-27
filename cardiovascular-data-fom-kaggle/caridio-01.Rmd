@@ -1,0 +1,104 @@
+---
+title: "Analise Cardio"
+author: "José Elvano Moraes"
+date: "4/27/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(haven)
+library(bnlearn)
+library(Rgraphviz)
+
+library(readr)
+```
+
+
+```{r}
+library(readr)
+cardio_train <- read_csv("cardio_train.csv", 
+    col_types = cols(id = col_integer(), 
+                     age = col_integer(), 
+                     gender = col_factor(levels = c("1", "2")), 
+                     height = col_number(), 
+                     weight = col_number(), 
+                     ap_hi = col_number(), 
+                     ap_lo = col_number(), 
+                     cholesterol = col_factor(levels = c("1", "2", "3")), 
+                     gluc = col_factor(levels = c("1", "2", "3")), 
+                     smoke = col_factor(levels = c("0","1")), 
+                     alco = col_factor(levels = c("0", "1")), 
+                     active = col_factor(levels = c("0","1")), 
+                     cardio = col_factor(levels = c("0","1"))))
+
+# genero = '1'
+# genero = '2'
+# 
+
+# cardio = filter(cardio_train, ap_hi>ap_lo, ap_lo > 40, ap_lo<200, ap_hi>60, ap_hi<300)
+set.seed(2)
+amostra = sample_frac(cardio_train, size = .9, replace = F)
+
+ccc <- select(amostra, age, height, weight, ap_lo, ap_hi)
+ccc2 <- discretize(ccc, method = 'hartemink', breaks = 4)
+dados <- cbind(select(amostra, -age, -height, -weight, -ap_lo, -ap_hi), ccc2)
+summary(dados)
+```
+```{r}
+ddf <- select(dados, -id)
+```
+
+```{r}
+bn1 <- mmhc(ddf)
+```
+```{r}
+graphviz.plot(bn1, shape = 'rectangle')
+```
+
+```{r}
+# -----------------------------------------------------------------------------
+R = 10
+graphviz.plot(bn1, shape = 'rectangle', main = "Markov Blanket - GLUCOSE", 
+              sub = "Feminino")
+              
+
+#fitted = bn.fit(bn1, ddf)
+#graphviz.chart(fitted, grid = TRUE, bg = "beige", bar.col = "black")
+```
+
+
+```{r}
+str.diff_f = boot.strength(ddf, R = R, algorithm = "mmhc")
+```
+
+```{r}
+
+rede.media = averaged.network(str.diff_f)
+strength.plot(rede.media, 
+              str.diff_f, 
+              shape = "rectangle")
+```
+
+```{r}
+rede.media.dagged <- pdag2dag(rede.media, 
+                                   ordering = names(ddf))
+
+fitt1 <- bn.fit(rede.media.dagged, ddf)
+junction = compile(as.grain(fitt1))
+jedu = setEvidence(propagate = FALSE, junction, 
+                   node = c("ap_hi",
+                            "weight", 
+                            "cholesterol"), 
+                   states = c("(140,180]",
+                              "(67,80]", 
+                              "3") )
+querygrain(jedu, 
+           nodes = c("CARDIO"),
+           type = "marginal")
+```
+
