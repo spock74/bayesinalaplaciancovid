@@ -1,8 +1,10 @@
 ---
-title: "Analise Cardio"
+title: "Análise Dataset de Cárdio"
 author: "José Elvano Moraes"
 date: "4/27/2021"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -10,19 +12,23 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-library(tidyverse)
-library(haven)
-library(bnlearn)
-library(Rgraphviz)
+suppressPackageStartupMessages(expr = library(tidyverse))
+suppressPackageStartupMessages(expr = library(haven))
+suppressPackageStartupMessages(expr = library(bnlearn))
+suppressPackageStartupMessages(expr = library(Rgraphviz))
 suppressPackageStartupMessages(expr = library(gRain))
 suppressPackageStartupMessages(expr = library(Rmpfr))
-library(readr)
+suppressPackageStartupMessages(expr = library(readr))
+suppressPackageStartupMessages(expr = library(precrec))
+suppressPackageStartupMessages(expr = library(ROCR))
+suppressPackageStartupMessages(expr = library(epiR))
 ```
 
 
 ```{r}
-cardio <- read_csv("cardio_train.csv", 
-    col_types = cols(id = col_integer(), 
+suppressWarnings( 
+  cardio <- read_csv("cardio_train.csv", 
+                     col_types = cols(id = col_integer(), 
                      age = col_number(), 
                      gender = col_factor(levels = c("1", "2")), 
                      height = col_number(), 
@@ -34,11 +40,9 @@ cardio <- read_csv("cardio_train.csv",
                      smoke = col_factor(levels = c("0","1")), 
                      alco = col_factor(levels = c("0", "1")), 
                      active = col_factor(levels = c("0","1")), 
-                     cardio = col_factor(levels = c("0","1"))))
-
-# genero = '1'
-# genero = '2'
-#
+                     cardio = col_factor(levels = c("0","1")))
+                     )
+)
 ```
 
 ```{r}
@@ -55,26 +59,20 @@ colunas <- c("age",
              "alco",        
              "active",      
              "cardio") 
-
-# colunas.para.inferencia <- cardio[,colunas]
-# 
-# dd<-na.omit(colunas.para.inferencia)
-# 
-# glimpse(dd)
 ```
 
 ```{r}
-dd = filter(cardio, ap_hi>ap_lo, ap_lo > 0, ap_lo<300, ap_hi>0, ap_hi<300)
+dd = filter(cardio, ap_hi>0, ap_hi>ap_lo, ap_lo > 0, ap_lo<300, ap_hi>0, ap_hi<300)
 set.seed(2)
 
 
 ccc <- select(dd, age, height, weight, ap_lo, ap_hi)
 ccc2 <- discretize(ccc, method = 'hartemink', breaks = 4)
 ddf <- cbind(select(dd, -age, -height, -weight, -ap_lo, -ap_hi), ccc2)
-ddf <-na.omit(ddf)
-ddf$id<-NULL
+ddf <- na.omit(ddf)
+ddf$id <- NULL
 
-amostra = ddf[1:7000,]#sample_frac(dd, size = .9, replace = F)
+amostra = ddf[1:7000,]
 amostra.test = ddf[7001:nrow(dd),]
 amostra.test<-na.omit(amostra.test)
 summary(ddf)
@@ -84,110 +82,122 @@ summary(ddf)
 bn1 <- mmhc(ddf)
 ```
 
+## Grafo mostrando como nodos coloridos as variáveis das quais a variavel **CARDIO** tem dependência estatística (*Markov blanket*) 
 ```{r}
-# -----------------------------------------------------------------------------
 graphviz.plot(bn1, shape = 'rectangle', 
               main = "Markov Blanket - CARDIO",
               highlight = list(nodes=mb(bn1, 'cardio'), fill="lightblue"))
 ```
 
 ```{r}
+print("Fase de bootstrap...")
 R = 100
 arc.strength = boot.strength(ddf, R = R, algorithm = "mmhc")
-
 rede.media = averaged.network(arc.strength)
+```
+
+## CDF da correlação (correlação de Pearson) entre os nodos do grafo
+```{r}
+plot(arc.strength)
+abline(v = 0.75, col = "tomato", lty = 2, lwd = 2)
+abline(v = 0.85, col = "steelblue", lty = 2, lwd = 2)
+```
+
+## Grafo médio após 100 iterações 
+```{r}
+par(mfrow = c(1, 2))
 strength.plot(rede.media, 
               arc.strength, 
               shape = "rectangle")
-
-
-arc.strength.test = boot.strength(amostra.test, R = R, algorithm = "mmhc")
-
-rede.media.test = averaged.network(arc.strength.test)
-strength.plot(rede.media.test, 
-              arc.strength.test, 
-              shape = "rectangle")
 ```
 
+```{r echo=FALSE}
+# cado a rede nao seja totalmente direcional (nao seja um DAG) forcar-la a ser
+rede.media.dagged <- pdag2dag(rede.media, 
+                             ordering = names(ddf))
+```
 
+## Grafo médio tornado um *DAG*
 ```{r}
-graphviz.plot(rede.media, shape = 'rectangle', 
+graphviz.plot(rede.media.dagged, shape = 'rectangle', 
               main = "Markov Blanket - CARDIO",
               highlight = list(nodes=mb(bn1, 'cardio'), fill="lightblue"))
 ```
+
+## Distribuiçaõ estatística (PDF) de cada variável
 ```{r}
-cat("pressão:")
-unique(ddf$ap_hi)
+fitted.m <- bn.fit(rede.media.dagged, amostra)
 
-cat("peso:")
-unique(ddf$weight)
-
-cat("idade:")
-unique(ddf$age)
-
-cat("colesterol:")
-unique(ddf$cholesterol)
+graphviz.chart(fitted.m,
+               type = "barprob", 
+               col = "darkblue",
+               bg = "azure", 
+               bar.col = "darkblue", 
+               main = "DAG sem WL")
 ```
 
-
-
-```{r}
-rede.media.dagged <- pdag2dag(rede.media, 
-                              ordering = names(ddf))
-
-fitt1 <- bn.fit(rede.media.dagged, ddf)
-junction = compile(as.grain(fitt1))
-jedu = setEvidence(propagate = FALSE, junction, 
-                   node = c("ap_hi",
-                            "age",
-                            "cholesterol"#, 
-                           # "active"
-                            ), 
-                   states = c("(110,120]",
-                              "(20953,23670]",
-                              #"(67,80]", 
-                              "1"#,
-                              #"0"
-                              ) )
-querygrain(jedu, 
-           nodes = c("cardio"))
-```
 
 # predição
-```{r}
-rede.media.test.dagged <- pdag2dag(rede.media.test, 
-                              ordering = names(amostra.test))
+```{r echo=FALSE}
+# rede.media.test.dagged <- pdag2dag(rede.media.test, 
+#                                    ordering = names(amostra.test))
 
+#USAR fit da rede da amostra learn, nao test
+fitt <- bn.fit(rede.media.dagged, ddf)
 
-fitt1 <- bn.fit(rede.media.test.dagged, amostra.test)
-junction = compile(as.grain(fitt1))
-nodos <- amostra.test[, mb(bn1, 'cardio')]
-nodes <-  mb(bn1, 'cardio')
-for (ii in c(1:100)) {
-  node <- list(nodos[ii,])
-  age <- amostra.test
+amostra.test.resul <- amostra.test
+amostra.test.resul$CARDIO.PRED <- -1
+nodos <- amostra.test[, mb(rede.media.dagged, 'cardio')]
+nodes.evidencias <-  mb(rede.media.dagged, 'cardio')
+
+junction = compile(as.grain(fitt))
+x<-c()
+for (ii in c(1:nrow(nodos))) {
+  jedu = setEvidence(propagate = TRUE, junction, 
+                     nodes = nodes.evidencias, 
+                     states = c(as.character(nodos[ii,1]), 
+                                as.character(nodos[ii,2]), 
+                                as.character(nodos[ii,3])#,
+                                #as.character(nodos[ii,4]), 
+                                #as.character(nodos[ii,5])
+                                ))
   
-  jedu = setEvidence(propagate = FALSE, junction, 
-                   node = nodes, 
-                   states = c(as.character(nodos[ii,1]), 
-                              as.character(nodos[ii,2]), 
-                              as.character(nodos[ii,3]),
-                              as.character(nodos[ii,4]), 
-                              as.character(nodos[ii,5])))
+  z <- querygrain(jedu, nodes = c("cardio"))
+  zz <- z$cardio
+  x[ii] <- zz[1]
+  amostra.test.resul$CARDIO.PRED[ii] <- x[ii]
   
-  querygrain(jedu, 
-           nodes = c("cardio"))
 }
 ```
 
+## Desempenho estatístico da rede bayesiana
+```{r echo=FALSE}
+amostra.test.resul$PREDICAO <- ifelse(amostra.test.resul$CARDIO.PRED>0.5, 0, 1)
+v <- amostra.test.resul[,c('cardio', 'PREDICAO')]
 
+print(table(v))
+```
 
-```{r}
-x = filter(ddf,            "ap_hi" == "(120,140]",
-                            "weight" == "(76,117.01]", 
-                            "age" == "(67,80]",
-                            "cholesterol" == "2")
+```{r echo=FALSE}
+# da lib epiR
+print(epi.tests(table(v), conf.level = 0.95))
+```
 
+```{r echo=FALSE}
+# Da library ROCR
+pred <- prediction(1-x, v$cardio)
+perf <- performance(pred,"tpr","fpr")
+plot(perf,
+     colorize=FALSE, 
+     main="Curva ROC", 
+     xlab = "Taxa de falsos positivos",
+     ylab = "Taxa de verddeiro positivos")
 
+# da lib precrec
+precrec_obj <- evalmod(scores = 1-x, labels = v$cardio)
+autoplot(precrec_obj)
+
+precrec_obj2 <- evalmod(scores = 1-x, labels = v$cardio, mode="basic")
+autoplot(precrec_obj2)  
 ```
 
