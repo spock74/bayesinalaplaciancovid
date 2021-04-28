@@ -121,7 +121,7 @@ rede.media.dagged <- pdag2dag(rede.media,
 ```{r}
 graphviz.plot(rede.media.dagged, shape = 'rectangle', 
               main = "Markov Blanket - CARDIO",
-              highlight = list(nodes=mb(bn1, 'cardio'), fill="lightblue"))
+              highlight = list(nodes=mb(rede.media.dagged, 'cardio'), fill="lightblue"))
 ```
 
 ## Distribuiçaõ estatística (PDF) de cada variável
