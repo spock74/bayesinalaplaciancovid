@@ -13,12 +13,16 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r libraries, echo=FALSE}
 suppressPackageStartupMessages(expr = library(tidyverse))
+suppressPackageStartupMessages(expr = library(haven))
 suppressPackageStartupMessages(expr = library(bnlearn))
-suppressPackageStartupMessages(expr = library(bnstruct))
-suppressPackageStartupMessages(expr = library(readr))
 suppressPackageStartupMessages(expr = library(Rgraphviz))
 suppressPackageStartupMessages(expr = library(gRain))
 suppressPackageStartupMessages(expr = library(Rmpfr))
+suppressPackageStartupMessages(expr = library(readr))
+suppressPackageStartupMessages(expr = library(precrec))
+suppressPackageStartupMessages(expr = library(ROCR))
+suppressPackageStartupMessages(expr = library(epiR))
+suppressPackageStartupMessages(expr = library(ROCit))
 ```
 
 # Redes Bayesianas
@@ -174,9 +178,12 @@ bn2 <- mmhc(s2)
 ```
 
 ```{r}
-par(mfrow = c(1, 2))
-graphviz.plot(bn1, shape = 'rectangle', main = "learn")
-graphviz.plot(bn2, shape = 'rectangle', main = "test")
+par(mfrow = c(1, 1))
+graphviz.plot(bn1, 
+              shape = 'rectangle', 
+              main = "learn",
+              highlight  = list(mb(bn1, 'EVOLUCAO')))
+#graphviz.plot(bn2, shape = 'rectangle', main = "test")
 ```
 ------------
 
@@ -253,55 +260,40 @@ cat(paste("Tempo para ", boots.trap, "Bootstraps:", delta, "s"))
 ```
 
 ```{r}
-par(mfrow = c(1, 2))
+par(mfrow = c(1, 1))
 
 strength.plot(rede.media.s1, 
               forca.real, 
               shape = "rectangle", 
               main = paste(thr.real))
 
-strength.plot(rede.media.s2,
-              forca.test,
-              shape = "rectangle",
-              main = paste(thr.test))
+# strength.plot(rede.media.s2,
+#               forca.test,
+#               shape = "rectangle",
+#               main = paste(thr.test))
 ```
-
-## Markov Blanket da variavel EVOLUCAO da amostra "learn"
-```{r}
-mb(x = bn1, node = 'EVOLUCAO')
-```
-
-## Markov Blanket da variavel EVOLUCAO da amostra "test"
-```{r}
-mb(x = bn2, node = 'EVOLUCAO')
-```
-
 ## Rede "dagged"
 ```{r}
 rede.media.s1.dagged <- pdag2dag(rede.media.s1, 
                                    ordering = names(s1))
-rede.media.s2.dagged <- pdag2dag(rede.media.s2,
-                                   ordering = names(s2))
+# rede.media.s2.dagged <- pdag2dag(rede.media.s2,
+#                                    ordering = names(s2))
 
 ```
 
+## Markov Blanket da variavel EVOLUCAO da amostra "learn"
 ```{r}
-par(mfrow = c(1, 2))
+mb(x = rede.media.s1.dagged, node = 'EVOLUCAO')
+```
+
+
+```{r}
+par(mfrow = c(1, 1))
 strength.plot(rede.media.s1.dagged, 
               forca.real, 
               shape = "rectangle", 
               main = paste(thr.real))
-strength.plot(rede.media.s2.dagged,
-              forca.test,
-              shape = "rectangle",
-              main = paste(thr.real))
 ```
-
-
-
-
-
-
 
 
 # SET.EVIDENCE + QUERYGRAIN
@@ -323,11 +315,11 @@ strength.plot(rede.media.s2.dagged,
 fitt1 <- bn.fit(rede.media.s1.dagged, s1)
 junction = compile(as.grain(fitt1))
 jedu = setEvidence(propagate = FALSE, junction, 
-                   node = c(#"IDADE",
+                   node = c("IDADE",
                             "UTI", 
                             "CLASSI_FIN", 
                             "SUPORT_VEN"), 
-                   states = c(#`[1,37.6667]`
+                   states = c("[1,37.6667]",
                               "1", 
                               "5", 
                               "3") )
@@ -339,39 +331,143 @@ querygrain(jedu,
 # CPQUERY
 ```{r}
 fitt.s1 <- bn.fit(rede.media.s1.dagged, s1)
-fitt.s2 <- bn.fit(rede.media.s2.dagged, s2)
 
 prob.pred.real.1 <- cpquery(fitted = fitt.s1,
                     event = (EVOLUCAO == "1") ,
-                    evidence = list(CLASSI_FIN = "5", SUPORT_VEN = "3",  UTI="1"),
+                    evidence = list(IDADE = "[1,37.6667]", CLASSI_FIN = "5", SUPORT_VEN = "3",  UTI="1"),
                     method = "lw")
 
 prob.pred.real.2 <- cpquery(fitted = fitt.s1,
                     event = (EVOLUCAO == "2") ,
-                    evidence = list(CLASSI_FIN = "5", SUPORT_VEN = "3",  UTI="1"),
+                    evidence = list(IDADE = "[1,37.6667]", CLASSI_FIN = "5", SUPORT_VEN = "3",  UTI="1"),
                     method = "lw")
 
 prob.pred.real.3 <- cpquery(fitted = fitt.s1,
                     event = (EVOLUCAO == "3") ,
-                    evidence = list(CLASSI_FIN = "5", SUPORT_VEN = "3",  UTI="1"),
+                    evidence = list(IDADE = "[1,37.6667]", CLASSI_FIN = "5", SUPORT_VEN = "3",  UTI="1"),
                     method = "lw")
 ###
-cat ("prob DE EVOLUCAO 1:", prob.pred.real.1*100)
-cat ("prob DE EVOLUCAO 2:", prob.pred.real.2*100)
-cat ("prob DE EVOLUCAO 3:", prob.pred.real.3*100)
+cat ("prob DE EVOLUCAO cura.................:", prob.pred.real.1*100, "\n")
+cat ("prob DE EVOLUCAO óbito por srag.......:", prob.pred.real.2*100, "\n")
+cat ("prob DE EVOLUCAO óbito por outra causa:", prob.pred.real.3*100, "\n")
 ```
 
 # PROPORCAO NA TABELA *TEST*
 ```{r}
 x <- s2 %>% filter(UTI == "1", 
                    CLASSI_FIN == "5", 
-                   SUPORT_VEN == "3")
+                   SUPORT_VEN == "3",
+                   IDADE == "[1,37.6667]")
 
 #nrow(x)
 
 nrow(filter(x, EVOLUCAO=="1"))/nrow(x)*100
 nrow(filter(x, EVOLUCAO=="2"))/nrow(x)*100
 nrow(filter(x, EVOLUCAO=="3"))/nrow(x)*100
-nrow(filter(x, EVOLUCAO=="9"))/nrow(x)*100
 
 ```
+
+--------------
+
+# Predição
+```{r echo=FALSE}
+ # rede.media.test.dagged <- pdag2dag(rede.media.test, 
+ #                                    ordering = names(amostra.test))
+
+#USAR fit da rede da amostra learn, nao test
+fitt <- bn.fit(rede.media.s1.dagged, s1)
+
+amostra.test.resul <- s2
+amostra.test.resul$PRED.1  <-  rep_len(-1, nrow(s2))
+amostra.test.resul$PRED.2  <-  rep_len(-1, nrow(s2))
+amostra.test.resul$PRED.3  <-  rep_len(-1, nrow(s2))
+amostra.test.resul$PRED.9  <-  rep_len(-1, nrow(s2))
+
+amostra.test.resul$EVOLUCAO.PRED.1 <- -1
+amostra.test.resul$EVOLUCAO.PRED.2 <- -1
+amostra.test.resul$EVOLUCAO.PRED.3 <- -1
+amostra.test.resul$EVOLUCAO.PRED.9 <- -1
+
+#aqui usar dados teste
+nodos <- s2[, mb(rede.media.s1.dagged, 'EVOLUCAO')]
+nodes.evidencias <-  mb(rede.media.s1.dagged, 'EVOLUCAO')
+
+junction = compile(as.grain(fitt))
+# x<-c()
+for (ii in c(1:nrow(nodos))) {
+  jedu = setEvidence(propagate = TRUE, junction, 
+                     nodes = nodes.evidencias, 
+                     states = c(as.character(nodos[ii,1]), 
+                                as.character(nodos[ii,2]), 
+                                as.character(nodos[ii,3]),
+                                as.character(nodos[ii,4])#, 
+                                #as.character(nodos[ii,5])
+                                ))
+  
+  z <- querygrain(jedu, nodes = c("EVOLUCAO"))
+  zz <- z$EVOLUCAO
+  # x[ii] <- zz[1]
+  # amostra.test.resul$EVOLUCAO.PRED[ii] <- zz[1]
+  amostra.test.resul$EVOLUCAO.PRED.1[ii] <- zz[1]
+  amostra.test.resul$EVOLUCAO.PRED.2[ii] <- zz[2]
+  amostra.test.resul$EVOLUCAO.PRED.3[ii] <- zz[3]
+  amostra.test.resul$EVOLUCAO.PRED.9[ii] <- zz[4]
+  
+}
+
+res <- amostra.test.resul[, c('EVOLUCAO', 'EVOLUCAO.PRED.1', 'EVOLUCAO.PRED.2', 'EVOLUCAO.PRED.3', 'EVOLUCAO.PRED.9')]
+
+```
+
+### Desempenho estatístico da rede
+```{r echo=FALSE}
+amostra.test.resul$PRED.2 <- ifelse(
+  (amostra.test.resul$EVOLUCAO.PRED.2 > amostra.test.resul$EVOLUCAO.PRED.1) &
+  (amostra.test.resul$EVOLUCAO.PRED.2 > amostra.test.resul$EVOLUCAO.PRED.3) & 
+  (amostra.test.resul$EVOLUCAO.PRED.2 > amostra.test.resul$EVOLUCAO.PRED.9), 
+  1, 0)
+
+amostra.test.resul$PRED.1 <- ifelse(
+  (amostra.test.resul$EVOLUCAO.PRED.1 > amostra.test.resul$EVOLUCAO.PRED.2) &
+  (amostra.test.resul$EVOLUCAO.PRED.1 > amostra.test.resul$EVOLUCAO.PRED.3) & 
+  (amostra.test.resul$EVOLUCAO.PRED.1 > amostra.test.resul$EVOLUCAO.PRED.9), 
+  1, 0)
+
+amostra.test.resul$PRED.3 <- ifelse(
+  (amostra.test.resul$EVOLUCAO.PRED.3 > amostra.test.resul$EVOLUCAO.PRED.1) &
+  (amostra.test.resul$EVOLUCAO.PRED.3 > amostra.test.resul$EVOLUCAO.PRED.2) & 
+  (amostra.test.resul$EVOLUCAO.PRED.3 > amostra.test.resul$EVOLUCAO.PRED.9), 
+  1, 0)
+
+amostra.test.resul$PRED.9 <- ifelse(
+  (amostra.test.resul$EVOLUCAO.PRED.9 > amostra.test.resul$EVOLUCAO.PRED.1) &
+  (amostra.test.resul$EVOLUCAO.PRED.9 > amostra.test.resul$EVOLUCAO.PRED.3) & 
+  (amostra.test.resul$EVOLUCAO.PRED.9 > amostra.test.resul$EVOLUCAO.PRED.2), 
+  1, 0)
+
+
+v <- amostra.test.resul[,c('EVOLUCAO', 'PRED.1', 'PRED.2', 'PRED.3', 'PRED.9')]
+
+# da lib epiR
+print(epi.tests(table(v), conf.level = 0.95))
+```
+### Curva ROC
+```{r echo=FALSE}
+# Da library ROCR
+# pred <- prediction(1-x, v$cardio)
+# perf <- performance(pred,"tpr","fpr")
+# plot(perf,
+#      colorize=FALSE, 
+#      main="Curva ROC", 
+#      xlab = "Taxa de falsos positivos",
+#      ylab = "Taxa de verdeiro positivos")
+
+## Warning: package 'ROCit' was built under R version 3.5.2
+ROCit_obj <- rocit(score=1-x,class=v$EVOLUCAO)
+par(mfrow = c(1, 1))
+plot(ROCit_obj, col = c(2,4))
+legend("bottomright", col = c(2,4),
+       c("Curva ROC empírica", "Acaso"), lwd = 2)
+ 
+print(summary(ROCit_obj))
+``` 

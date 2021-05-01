@@ -11,7 +11,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r echo=FALSE}
 suppressPackageStartupMessages(expr = library(tidyverse))
 suppressPackageStartupMessages(expr = library(haven))
 suppressPackageStartupMessages(expr = library(bnlearn))
@@ -25,7 +25,7 @@ suppressPackageStartupMessages(expr = library(epiR))
 ```
 
 
-```{r}
+```{r echo=FALSE}
 suppressWarnings( 
   cardio <- read_csv("cardio_train.csv", 
                      col_types = cols(id = col_integer(), 
@@ -45,8 +45,7 @@ suppressWarnings(
 )
 ```
 
-```{r}
-
+```{r echo=FALSE}
 colunas <- c("age",         
              "gender",      
              "height",      
@@ -61,7 +60,7 @@ colunas <- c("age",
              "cardio") 
 ```
 
-```{r}
+```{r echo=FALSE}
 dd = filter(cardio, ap_hi>0, ap_hi>ap_lo, ap_lo > 0, ap_lo<300, ap_hi>0, ap_hi<300)
 set.seed(2)
 
@@ -78,18 +77,18 @@ amostra.test<-na.omit(amostra.test)
 summary(ddf)
 ```
 
-```{r}
+```{r echo=FALSE}
 bn1 <- mmhc(ddf)
 ```
 
 ## Grafo mostrando como nodos coloridos as variáveis das quais a variavel **CARDIO** tem dependência estatística (*Markov blanket*) 
-```{r}
+```{r echo=FALSE}
 graphviz.plot(bn1, shape = 'rectangle', 
               main = "Markov Blanket - CARDIO",
               highlight = list(nodes=mb(bn1, 'cardio'), fill="lightblue"))
 ```
 
-```{r}
+```{r echo=FALSE}
 print("Fase de bootstrap...")
 R = 100
 arc.strength = boot.strength(ddf, R = R, algorithm = "mmhc")
@@ -97,14 +96,14 @@ rede.media = averaged.network(arc.strength)
 ```
 
 ## CDF da correlação (correlação de Pearson) entre os nodos do grafo
-```{r}
+```{r echo=FALSE}
 plot(arc.strength)
 abline(v = 0.75, col = "tomato", lty = 2, lwd = 2)
 abline(v = 0.85, col = "steelblue", lty = 2, lwd = 2)
 ```
 
 ## Grafo médio após 100 iterações 
-```{r}
+```{r echo=FALSE}
 par(mfrow = c(1, 2))
 strength.plot(rede.media, 
               arc.strength, 
@@ -118,14 +117,14 @@ rede.media.dagged <- pdag2dag(rede.media,
 ```
 
 ## Grafo médio tornado um *DAG*
-```{r}
+```{r echo=FALSE}
 graphviz.plot(rede.media.dagged, shape = 'rectangle', 
               main = "Markov Blanket - CARDIO",
               highlight = list(nodes=mb(rede.media.dagged, 'cardio'), fill="lightblue"))
 ```
 
 ## Distribuiçaõ estatística (PDF) de cada variável
-```{r}
+```{r echo=FALSE}
 fitted.m <- bn.fit(rede.media.dagged, amostra)
 
 graphviz.chart(fitted.m,
@@ -200,3 +199,4 @@ precrec_obj2 <- evalmod(scores = 1-x, labels = v$cardio, mode="basic")
 autoplot(precrec_obj2)  
 ```
 
+Þ
