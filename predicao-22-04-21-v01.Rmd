@@ -81,33 +81,33 @@ nodos <- c(  "CLASSI_FIN",
              #"CO_MUN_RES", 
              #"DT_NOTIFIC",      
              "NU_IDADE_N",
-             "FEBRE",
-             "GARGANTA",
+             #"FEBRE",
+             #"GARGANTA",
              "SATURACAO", 
              #"VOMITO",
              "EVOLUCAO",
              "DIABETES",
              "OBESIDADE", 
              #"CS_GESTANT",
-             "DOR_ABD", 
+             #"DOR_ABD", 
              #"DT_EVOLUCA", 
-             "CS_RACA", 
-             "CS_SEXO",
+             #"CS_RACA", 
+             #"CS_SEXO",
              "PERD_OLFT", 
              "PERD_PALA", 
              #"NEUROLOGIC", 
-             "FADIGA", 
+             #"FADIGA", 
              #"CRITERIO",
              "PNEUMOPATI", 
              "UTI", 
-             "CARDIOPATI", 
+             #"CARDIOPATI", 
              "VACINA", 
-             "HEPATICA",
-             "SUPORT_VEN", 
-             "ASMA",
-             "ANTIVIRAL", 
-             "IMUNODEPRE",
-             "RENAL"#, 
+             #"HEPATICA",
+             "SUPORT_VEN"#, 
+             #"ASMA"#,
+             #"ANTIVIRAL", 
+             #"IMUNODEPRE",
+             #"RENAL"#, 
              #"DT_INTERNA"
              )
 
@@ -168,13 +168,16 @@ ddf.test <- ddf %>%
 
 ```{r}
 s1 <- ddf.learn
-s1 <- select(ddf.learn, -index, -CS_SEXO, -ASMA, -RENAL)
+s1 <- select(ddf.learn, -index)
 
 s2 <- ddf.test
-s2 <- select(ddf.test, -index, -CS_SEXO, -ASMA, -RENAL)
-# 
-bn1 <- mmhc(s1)
-bn2 <- mmhc(s2)
+s2 <- select(ddf.test, -index)
+#
+```
+
+
+```{r}
+bn1 <- iamb.fdr(s1)
 ```
 
 ```{r}
@@ -191,48 +194,30 @@ graphviz.plot(bn1,
 
 With cpquery by setting method = "lw" and specifying the evidence as a named list with one element for each node we are conditioning on 
 ```{r}
-fitt <- bn.fit(bn1, s1)
-nparticles = seq(from = 5 * 10^3, to = 10^5, by = 5 * 10^3)
-prob = matrix(0, nrow = length(nparticles), ncol = 20)
-for (i in seq_along(nparticles))
-  for (j in 1:20)
-    prob[i, j] = cpquery(fitt, 
-                         event = (UTI == "1"),
-                         evidence = list(SATURACAO = "2"), 
-                         method = "lw",
-                         n = nparticles[i])
+# fitt <- bn.fit(bn1, s1)
+# nparticles = seq(from = 5 * 10^3, to = 10^5, by = 5 * 10^3)
+# prob = matrix(0, nrow = length(nparticles), ncol = 20)
+# for (i in seq_along(nparticles))
+#   for (j in 1:20)
+#     prob[i, j] = cpquery(fitt, 
+#                          event = (UTI == "1"),
+#                          evidence = list(SATURACAO = "2"), 
+#                          method = "lw",
+#                          n = nparticles[i])
 ```
 
 
 ```{r echo=TRUE}
-matplot(x=1:20, y=prob[,1:20], 
-        pch = 21, 
-        col="blue", 
-        main="Desempenho de método likelihood weighting", 
-        ylab = "Probabilidade Estimada", 
-        xlab = "Número de partículas")
+# matplot(x=1:20, y=prob[,1:20], 
+#         pch = 21, 
+#         col="blue", 
+#         main="Desempenho de método likelihood weighting", 
+#         ylab = "Probabilidade Estimada", 
+#         xlab = "Número de partículas")
 ```
 
 ------------
 
-
-# Inferência
-
-In practice, probabilistic reasoning on Bayesian networks has its roots embedded in Bayesian statistics and focuses on the computation of posterior probabilities or densities. For example, suppose we have learned a Bayesian network B with.
-Bayesian inference on the other hand is often a follow-up to Bayesian net- work learning and deals with inferring the state of a set of variables given the state of others as evidence.
-
-Bayesian networks, like other statistical models, can be used to answer questions about the nature of the data that go beyond the mere description of the observed sample. Techniques used to obtain those answers based on new evidence are known in general as inference. For Bayesian networks, the process of answering these questions is also known as probabilistic reasoning or belief updating, while the questions themselves are called queries.
-
-In practice, probabilistic reasoning on Bayesian networks has its roots embedded in Bayesian statistics and focuses on the computation of posterior probabilities or densities. For example, suppose we have learned a Bayesian network B with
-
-structure G and parameters $\Theta$ , under one of the distributional assumptions detailed in Sect. 2.2.4. Subsequently, we want to investigate the effects of a new piece of evidence E on the distribution of X using the knowledge encoded in B, that is, to investigate the posterior distribution $P(X | E, B) = P(X | E, G, \Theta )$.
-The approaches used for this kind of analysis vary depending on the nature of E and on the nature of information we are interested in. The two most common kinds of evidence are as follows:
-
-- Hard evidence, an instantiation of one or more variables in the network. In other words,
-
-- Soft evidence, a new distribution for one or more variables in the network. Since both the network structure and the distributional assumptions are treated as fixed, soft evidence is usually specified as a new set of parameters,
-
-As far as queries are concerned, we will focus on conditional probability queries (CPQ) and maximum a posteriori (MAP) queries, also known as most probable explanation (MPE) queries. Both apply mainly to hard evidence, even though they can be used in combination with soft evidence.
 
 ## Predição 
 
@@ -244,14 +229,9 @@ forca.real = boot.strength(s1,
                            R = boots.trap, 
                            algorithm = "mmhc")
 
-forca.test = boot.strength(s2,
-                           R = boots.trap,
-                           algorithm = "mmhc")
 
 rede.media.s1 = averaged.network(forca.real)
-rede.media.s2 = averaged.network(forca.test)
 
-thr.test <- paste('Thr: ', attr(forca.test, "threshold"))
 thr.real <- paste('Thr: ', attr(forca.real, "threshold"))
 
 delta <- Sys.time() - start_time
@@ -259,19 +239,6 @@ cat(paste("Tempo para ", boots.trap, "Bootstraps:", delta, "s"))
 
 ```
 
-```{r}
-par(mfrow = c(1, 1))
-
-strength.plot(rede.media.s1, 
-              forca.real, 
-              shape = "rectangle", 
-              main = paste(thr.real))
-
-# strength.plot(rede.media.s2,
-#               forca.test,
-#               shape = "rectangle",
-#               main = paste(thr.test))
-```
 ## Rede "dagged"
 ```{r}
 rede.media.s1.dagged <- pdag2dag(rede.media.s1, 
@@ -281,19 +248,30 @@ rede.media.s1.dagged <- pdag2dag(rede.media.s1,
 
 ```
 
-## Markov Blanket da variavel EVOLUCAO da amostra "learn"
 ```{r}
-mb(x = rede.media.s1.dagged, node = 'EVOLUCAO')
-```
+par(mfrow = c(1, 2))
 
+strength.plot(rede.media.s1, 
+              forca.real, 
+              shape = "rectangle", 
+              main = paste(thr.real))
 
-```{r}
-par(mfrow = c(1, 1))
 strength.plot(rede.media.s1.dagged, 
               forca.real, 
               shape = "rectangle", 
               main = paste(thr.real))
+# strength.plot(rede.media.s2,
+#               forca.test,
+#               shape = "rectangle",
+#               main = paste(thr.test))
 ```
+
+## Markov Blanket da variavel EVOLUCAO da amostra "learn"
+```{r}
+mb(x = rede.media.s1.dagged, node = 'EVOLUCAO')
+mb(x = bn1, node = 'EVOLUCAO')
+```
+
 
 
 # SET.EVIDENCE + QUERYGRAIN
@@ -311,59 +289,59 @@ strength.plot(rede.media.s1.dagged,
 # 2-Sim, nao invasivo 
 # 3-Nao
 # 9-Ignorado
-
-fitt1 <- bn.fit(rede.media.s1.dagged, s1)
-junction = compile(as.grain(fitt1))
-jedu = setEvidence(propagate = FALSE, junction, 
-                   node = c("IDADE",
-                            "UTI", 
-                            "CLASSI_FIN", 
-                            "SUPORT_VEN"), 
-                   states = c("[1,37.6667]",
-                              "1", 
-                              "5", 
-                              "3") )
-querygrain(jedu, 
-           nodes = c("EVOLUCAO"),
-           type = "marginal")
+# 
+# fitt1 <- bn.fit(rede.media.s1.dagged, s1)
+# junction = compile(as.grain(fitt1))
+# jedu = setEvidence(propagate = FALSE, junction, 
+#                    node = c("IDADE",
+#                             "UTI", 
+#                             "CLASSI_FIN", 
+#                             "SUPORT_VEN"), 
+#                    states = c("[1,37.6667]",
+#                               "1", 
+#                               "5", 
+#                               "3") )
+# querygrain(jedu, 
+#            nodes = c("EVOLUCAO"),
+#            type = "marginal")
 ```
 
 # CPQUERY
 ```{r}
-fitt.s1 <- bn.fit(rede.media.s1.dagged, s1)
-
-prob.pred.real.1 <- cpquery(fitted = fitt.s1,
-                    event = (EVOLUCAO == "1") ,
-                    evidence = list(IDADE = "[1,37.6667]", CLASSI_FIN = "5", SUPORT_VEN = "3",  UTI="1"),
-                    method = "lw")
-
-prob.pred.real.2 <- cpquery(fitted = fitt.s1,
-                    event = (EVOLUCAO == "2") ,
-                    evidence = list(IDADE = "[1,37.6667]", CLASSI_FIN = "5", SUPORT_VEN = "3",  UTI="1"),
-                    method = "lw")
-
-prob.pred.real.3 <- cpquery(fitted = fitt.s1,
-                    event = (EVOLUCAO == "3") ,
-                    evidence = list(IDADE = "[1,37.6667]", CLASSI_FIN = "5", SUPORT_VEN = "3",  UTI="1"),
-                    method = "lw")
-###
-cat ("prob DE EVOLUCAO cura.................:", prob.pred.real.1*100, "\n")
-cat ("prob DE EVOLUCAO óbito por srag.......:", prob.pred.real.2*100, "\n")
-cat ("prob DE EVOLUCAO óbito por outra causa:", prob.pred.real.3*100, "\n")
+# fitt.s1 <- bn.fit(bn1, s1)
+# 
+# prob.pred.real.1 <- cpquery(fitted = fitt.s1,
+#                     event = (EVOLUCAO == "1") ,
+#                     evidence = list(IDADE = "[1,37.6667]", CLASSI_FIN = "5", SUPORT_VEN = "3",  UTI="1"),
+#                     method = "lw")
+# 
+# prob.pred.real.2 <- cpquery(fitted = fitt.s1,
+#                     event = (EVOLUCAO == "2") ,
+#                     evidence = list(IDADE = "[1,37.6667]", CLASSI_FIN = "5", SUPORT_VEN = "3",  UTI="1"),
+#                     method = "lw")
+# 
+# prob.pred.real.3 <- cpquery(fitted = fitt.s1,
+#                     event = (EVOLUCAO == "3") ,
+#                     evidence = list(IDADE = "[1,37.6667]", CLASSI_FIN = "5", SUPORT_VEN = "3",  UTI="1"),
+#                     method = "lw")
+# ###
+# cat ("prob DE EVOLUCAO cura.................:", prob.pred.real.1*100, "\n")
+# cat ("prob DE EVOLUCAO óbito por srag.......:", prob.pred.real.2*100, "\n")
+# cat ("prob DE EVOLUCAO óbito por outra causa:", prob.pred.real.3*100, "\n")
 ```
 
 # PROPORCAO NA TABELA *TEST*
 ```{r}
-x <- s2 %>% filter(UTI == "1", 
-                   CLASSI_FIN == "5", 
-                   SUPORT_VEN == "3",
-                   IDADE == "[1,37.6667]")
-
-#nrow(x)
-
-nrow(filter(x, EVOLUCAO=="1"))/nrow(x)*100
-nrow(filter(x, EVOLUCAO=="2"))/nrow(x)*100
-nrow(filter(x, EVOLUCAO=="3"))/nrow(x)*100
+# x <- s2 %>% filter(UTI == "1", 
+#                    CLASSI_FIN == "5", 
+#                    SUPORT_VEN == "3",
+#                    IDADE == "[1,37.6667]")
+# 
+# #nrow(x)
+# 
+# nrow(filter(x, EVOLUCAO=="1"))/nrow(x)*100
+# nrow(filter(x, EVOLUCAO=="2"))/nrow(x)*100
+# nrow(filter(x, EVOLUCAO=="3"))/nrow(x)*100
 
 ```
 
@@ -382,6 +360,7 @@ amostra.test.resul$PRED.1  <-  rep_len(-1, nrow(s2))
 amostra.test.resul$PRED.2  <-  rep_len(-1, nrow(s2))
 amostra.test.resul$PRED.3  <-  rep_len(-1, nrow(s2))
 amostra.test.resul$PRED.9  <-  rep_len(-1, nrow(s2))
+amostra.test.resul$RESUL  <-  rep_len(-1, nrow(s2))
 
 amostra.test.resul$EVOLUCAO.PRED.1 <- -1
 amostra.test.resul$EVOLUCAO.PRED.2 <- -1
@@ -421,16 +400,16 @@ res <- amostra.test.resul[, c('EVOLUCAO', 'EVOLUCAO.PRED.1', 'EVOLUCAO.PRED.2', 
 
 ### Desempenho estatístico da rede
 ```{r echo=FALSE}
-amostra.test.resul$PRED.2 <- ifelse(
-  (amostra.test.resul$EVOLUCAO.PRED.2 > amostra.test.resul$EVOLUCAO.PRED.1) &
-  (amostra.test.resul$EVOLUCAO.PRED.2 > amostra.test.resul$EVOLUCAO.PRED.3) & 
-  (amostra.test.resul$EVOLUCAO.PRED.2 > amostra.test.resul$EVOLUCAO.PRED.9), 
-  1, 0)
-
 amostra.test.resul$PRED.1 <- ifelse(
   (amostra.test.resul$EVOLUCAO.PRED.1 > amostra.test.resul$EVOLUCAO.PRED.2) &
   (amostra.test.resul$EVOLUCAO.PRED.1 > amostra.test.resul$EVOLUCAO.PRED.3) & 
   (amostra.test.resul$EVOLUCAO.PRED.1 > amostra.test.resul$EVOLUCAO.PRED.9), 
+  1, 0)
+
+amostra.test.resul$PRED.2 <- ifelse(
+  (amostra.test.resul$EVOLUCAO.PRED.2 > amostra.test.resul$EVOLUCAO.PRED.1) &
+  (amostra.test.resul$EVOLUCAO.PRED.2 > amostra.test.resul$EVOLUCAO.PRED.3) & 
+  (amostra.test.resul$EVOLUCAO.PRED.2 > amostra.test.resul$EVOLUCAO.PRED.9), 
   1, 0)
 
 amostra.test.resul$PRED.3 <- ifelse(
@@ -445,29 +424,110 @@ amostra.test.resul$PRED.9 <- ifelse(
   (amostra.test.resul$EVOLUCAO.PRED.9 > amostra.test.resul$EVOLUCAO.PRED.2), 
   1, 0)
 
+v <- amostra.test.resul[,c('EVOLUCAO', 'PRED.1', 'PRED.2', 'PRED.3', 'PRED.9',
+                           'EVOLUCAO.PRED.1','EVOLUCAO.PRED.2','EVOLUCAO.PRED.3','EVOLUCAO.PRED.9')]
+v$RESUL <- rep_len(0, nrow(s2))
+v$SCORE <- rep_len(runif(n = 10000), 10000)
+for (ii in c(1:nrow(s2))) {
+  
+  if(v$EVOLUCAO[ii] == 1 & v$PRED.1[ii] == 1){
+    v$RESUL[ii] = 1
+    v$SCORE[ii] = max(v$EVOLUCAO.PRED.1[ii],
+                      v$EVOLUCAO.PRED.2[ii],
+                      v$EVOLUCAO.PRED.3[ii],
+                      v$EVOLUCAO.PRED.9[ii])
+  }
+  
 
-v <- amostra.test.resul[,c('EVOLUCAO', 'PRED.1', 'PRED.2', 'PRED.3', 'PRED.9')]
+  if(v$EVOLUCAO[ii] == 2 & v$PRED.2[ii] == 1){
+    v$RESUL[ii] = 1
+    v$SCORE[ii] = max(v$EVOLUCAO.PRED.1[ii],
+                      v$EVOLUCAO.PRED.2[ii],
+                      v$EVOLUCAO.PRED.3[ii],
+                      v$EVOLUCAO.PRED.9[ii])
+  }
+  
 
-# da lib epiR
-print(epi.tests(table(v), conf.level = 0.95))
+  if(v$EVOLUCAO[ii] == 3 & v$PRED.3[ii] == 1){
+    v$RESUL[ii] = 1
+    v$SCORE[ii] = max(v$EVOLUCAO.PRED.1[ii],
+                      v$EVOLUCAO.PRED.2[ii],
+                      v$EVOLUCAO.PRED.3[ii],
+                      v$EVOLUCAO.PRED.9[ii])
+  }
+  
+
+  if(v$EVOLUCAO[ii] == 9 & v$PRED.9[ii] == 1){
+    v$RESUL[ii] = 1
+    v$SCORE[ii] = max(v$EVOLUCAO.PRED.1[ii],
+                      v$EVOLUCAO.PRED.2[ii],
+                      v$EVOLUCAO.PRED.3[ii],
+                      v$EVOLUCAO.PRED.9[ii])
+  }
+}
+
+EVOLUCAOFINAL <- ifelse(v$EVOLUCAO != 1, 0, 1)
+v$EVOLUCAOFINAL  <- EVOLUCAOFINAL
 ```
+
+```{r}
+fitt <- bn.fit(rede.media.s1.dagged, s1)
+prob.pred.cpq <- c()
+
+
+for (ii in c(1:nrow(nodos))) {
+prob.pred.cpq[ii] <- cpquery(fitted = fitt, 
+                    event = (EVOLUCAO == "2") , 
+                    evidence = list(CLASSI_FIN = as.character(nodos[ii,1]), 
+                                    IDADE = as.character(nodos[ii,2]), 
+                                    UTI = as.character(nodos[ii,3]),
+                                    SUPORT_VEN = as.character(nodos[ii,4])),
+                    method = "lw")
+}
+```
+
+
+
+```{r echo=FALSE}
+# da lib epiR
+print(epi.tests(table(v$EVOLUCAOFINAL, v$RESUL), conf.level = 0.95))
+```
+
+
 ### Curva ROC
 ```{r echo=FALSE}
 # Da library ROCR
-# pred <- prediction(1-x, v$cardio)
-# perf <- performance(pred,"tpr","fpr")
-# plot(perf,
-#      colorize=FALSE, 
-#      main="Curva ROC", 
-#      xlab = "Taxa de falsos positivos",
-#      ylab = "Taxa de verdeiro positivos")
-
-## Warning: package 'ROCit' was built under R version 3.5.2
-ROCit_obj <- rocit(score=1-x,class=v$EVOLUCAO)
+pred <- prediction(prob.pred.cpq, v$RESUL)
+perf <- performance(pred,"tpr","fpr")
+plot(perf,
+     colorize=FALSE,
+     main="Curva ROC",
+     xlab = "Taxa de falsos positivos",
+     ylab = "Taxa de verdeiro positivos")
+```
+```{r echo=FALSE}
+xx <- filter(v, PRED.1==1)
+ROCit_obj <- rocit(score=v$SCORE,class=v$RESUL)
 par(mfrow = c(1, 1))
 plot(ROCit_obj, col = c(2,4))
 legend("bottomright", col = c(2,4),
        c("Curva ROC empírica", "Acaso"), lwd = 2)
- 
+
 print(summary(ROCit_obj))
-``` 
+```
+
+```{r echo=FALSE}
+class <- v$RESUL
+score <- v$SCORE
+#
+rocit <- rocit(score = score, 
+               class = class) #default: empirical
+kplot <- ksplot(rocit)
+#
+message("KS Stat (empirical) : ", 
+        kplot$`KS stat`)
+#> KS Stat (empirical) : 0.471936339522546
+message("KS Stat (empirical) cutoff : ", 
+        kplot$`KS Cutoff`)
+#> KS Stat (empirical) cutoff : 0.892084996383686
+```
