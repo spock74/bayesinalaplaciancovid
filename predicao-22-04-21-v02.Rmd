@@ -281,16 +281,15 @@ rede.media.s1.dagged <- pdag2dag(rede.media.s1,
 
 ```{r}
 par(mfrow = c(1, 2))
-
+graphviz.plot(bn.wl.bl, 
+              shape = "rectangle", 
+              main = paste(thr.real))
 strength.plot(rede.media.s1, 
               forca.real, 
               shape = "rectangle", 
               main = paste(thr.real))
 
-strength.plot(rede.media.s1.dagged, 
-              forca.real, 
-              shape = "rectangle", 
-              main = paste(thr.real))
+
 # strength.plot(rede.media.s2,
 #               forca.test,
 #               shape = "rectangle",
@@ -538,7 +537,7 @@ v <- amostra.test.resul[,c('EVOLUCAO', 'PRED.1', 'PRED.2', 'PRED.3', 'PRED.9',
 v$RESUL <- rep_len(0, 8000)
 v$SCORE <- rep_len(runif(n = 8000), 8000)
 for (ii in c(1:8000)) {
-  print(ii)
+
   if(v$EVOLUCAO[ii] == 1 & v$PRED.1[ii] == 1){
     v$RESUL[ii] = 1
     v$SCORE[ii] = max(v$EVOLUCAO.PRED.1[ii],
@@ -600,7 +599,7 @@ prob.pred.cpq[ii] <- cpquery(fitted = fitt,
 
 
   
-```{r echo=FALSE}
+```{r}
 # da lib epiR
 print(epi.tests(table(v$EVOLUCAOFINAL, v$RESUL), conf.level = 0.95))
 ```
