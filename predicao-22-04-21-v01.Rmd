@@ -23,6 +23,7 @@ suppressPackageStartupMessages(expr = library(precrec))
 suppressPackageStartupMessages(expr = library(ROCR))
 suppressPackageStartupMessages(expr = library(epiR))
 suppressPackageStartupMessages(expr = library(ROCit))
+suppressPackageStartupMessages(expr = library(mice))
 ```
 
 # Redes Bayesianas
@@ -102,6 +103,7 @@ nodos <- c(  "CLASSI_FIN",
              "UTI", 
              #"CARDIOPATI", 
              "VACINA", 
+             #"HOSPITAL",
              #"HEPATICA",
              "SUPORT_VEN"#, 
              #"ASMA"#,
@@ -177,7 +179,7 @@ s2 <- select(ddf.test, -index)
 
 
 ```{r}
-bn1 <- iamb.fdr(s1)
+bn1 <- mmhc(s1)
 ```
 
 ```{r}
@@ -188,43 +190,72 @@ graphviz.plot(bn1,
               highlight  = list(mb(bn1, 'EVOLUCAO')))
 #graphviz.plot(bn2, shape = 'rectangle', main = "test")
 ```
-------------
+
+
 
 # TODO
 
 With cpquery by setting method = "lw" and specifying the evidence as a named list with one element for each node we are conditioning on 
+
+
 ```{r}
-# fitt <- bn.fit(bn1, s1)
-# nparticles = seq(from = 5 * 10^3, to = 10^5, by = 5 * 10^3)
-# prob = matrix(0, nrow = length(nparticles), ncol = 20)
-# for (i in seq_along(nparticles))
-#   for (j in 1:20)
-#     prob[i, j] = cpquery(fitt, 
-#                          event = (UTI == "1"),
-#                          evidence = list(SATURACAO = "2"), 
-#                          method = "lw",
-#                          n = nparticles[i])
+wl <- matrix(c("OBESIDADE", "DIABETES",
+              "IDADE", "VACINA",
+              #"IDADE", "SUPORT_VEN",
+              "CLASSI_FIN", "EVOLUCAO",
+              "OBESIDADE", "EVOLUCAO",
+              #"OBESIDADE", "EVOLUCAO",
+              "PERD_OLFT", "SATURACAO",
+              "SUPORT_VEN", "EVOLUCAO",
+              "SATURACAO", "SUPORT_VEN",
+              "IDADE","EVOLUCAO",
+              "UTI", "EVOLUCAO"),
+        ncol = 2, byrow = TRUE, dimnames = list(NULL, c("from", "to")))
+
+bl <- matrix(c("OBESIDADE", "DIABETES",
+               "OBESIDADE", "CLASSI_FIN",
+               "CLASSI_FIN", "OBESIDADE",
+               "UTI", "VACINA"),
+            ncol = 2, byrow = TRUE, dimnames = list(NULL, c("from", "to")))
+
+bn.wl.bl <- mmhc(s1, whitelist = wl, blacklist = bl)
 ```
 
+## Rede black and withed listed
+```{r}
+par(mfrow = c(1, 1))
+graphviz.plot(bn.wl.bl, 
+              shape = 'rectangle', 
+              main = "learn",
+              highlight  = list(mb(bn.wl.bl, 'EVOLUCAO')))
 
-```{r echo=TRUE}
-# matplot(x=1:20, y=prob[,1:20], 
-#         pch = 21, 
-#         col="blue", 
-#         main="Desempenho de método likelihood weighting", 
-#         ylab = "Probabilidade Estimada", 
-#         xlab = "Número de partículas")
 ```
+
 
 ------------
 
 
 ## Predição 
+### explorar a funcao bn.boot
+### bb <- bn.boot(data = s1, statistic = function(x) x, R = 10, algorithm = 'mmhc')
 
-### Bootstrap
 ```{r}
-start_time <- Sys.time()
+bb <- bn.boot(data = s1, statistic = function(x) x, R = 10, algorithm = 'mmhc')
+par(mfrow = c(1, 2))
 
+graphviz.plot(bb[[1]], 
+              shape = "rectangle", 
+              main = paste("boot 1"))
+graphviz.plot(bb[[10]], 
+              shape = "rectangle", 
+              main = paste("boot 10"))
+```
+
+## Bootstrap REDE PADRÃO
+
+```{r}
+
+start_time <- Sys.time()
 forca.real = boot.strength(s1,
                            R = boots.trap, 
                            algorithm = "mmhc")
@@ -243,7 +274,7 @@ cat(paste("Tempo para ", boots.trap, "Bootstraps:", delta, "s"))
 ```{r}
 rede.media.s1.dagged <- pdag2dag(rede.media.s1, 
                                    ordering = names(s1))
-# rede.media.s2.dagged <- pdag2dag(rede.media.s2,
+#rede.media.s2.dagged <- pdag2dag(rede.media.s2,
 #                                    ordering = names(s2))
 
 ```
@@ -270,6 +301,8 @@ strength.plot(rede.media.s1.dagged,
 ```{r}
 mb(x = rede.media.s1.dagged, node = 'EVOLUCAO')
 mb(x = bn1, node = 'EVOLUCAO')
+mb(x = bn.wl.bl, node = 'EVOLUCAO')
+mb(x = bb[[10]], node = 'EVOLUCAO')
 ```
 
 
@@ -306,54 +339,130 @@ mb(x = bn1, node = 'EVOLUCAO')
 #            type = "marginal")
 ```
 
-# CPQUERY
+# CPQUERY REDE *unica* SEM conhecimento especialista
+## mb:  "CLASSI_FIN" "IDADE"  "UTI"        "SUPORT_VEN"
 ```{r}
-# fitt.s1 <- bn.fit(bn1, s1)
-# 
-# prob.pred.real.1 <- cpquery(fitted = fitt.s1,
-#                     event = (EVOLUCAO == "1") ,
-#                     evidence = list(IDADE = "[1,37.6667]", CLASSI_FIN = "5", SUPORT_VEN = "3",  UTI="1"),
-#                     method = "lw")
-# 
-# prob.pred.real.2 <- cpquery(fitted = fitt.s1,
-#                     event = (EVOLUCAO == "2") ,
-#                     evidence = list(IDADE = "[1,37.6667]", CLASSI_FIN = "5", SUPORT_VEN = "3",  UTI="1"),
-#                     method = "lw")
-# 
-# prob.pred.real.3 <- cpquery(fitted = fitt.s1,
-#                     event = (EVOLUCAO == "3") ,
-#                     evidence = list(IDADE = "[1,37.6667]", CLASSI_FIN = "5", SUPORT_VEN = "3",  UTI="1"),
-#                     method = "lw")
-# ###
-# cat ("prob DE EVOLUCAO cura.................:", prob.pred.real.1*100, "\n")
-# cat ("prob DE EVOLUCAO óbito por srag.......:", prob.pred.real.2*100, "\n")
-# cat ("prob DE EVOLUCAO óbito por outra causa:", prob.pred.real.3*100, "\n")
+fitt.s1 <- bn.fit(bn1, s1)
+
+prob.pred.real.1 <- cpquery(fitted = fitt.s1,
+                    event = (EVOLUCAO == "1") ,
+                    evidence = list(IDADE = "(38,75]", CLASSI_FIN = "5", SUPORT_VEN = "3",  UTI="1"),
+                    method = "lw")
+
+prob.pred.real.2 <- cpquery(fitted = fitt.s1,
+                    event = (EVOLUCAO == "2") ,
+                    evidence = list(IDADE = "(38,75]", CLASSI_FIN = "5", SUPORT_VEN = "3",  UTI="1"),
+                    method = "lw")
+
+prob.pred.real.3 <- cpquery(fitted = fitt.s1,
+                    event = (EVOLUCAO == "3") ,
+                    evidence = list(IDADE = "(38,75]", CLASSI_FIN = "5", SUPORT_VEN = "3",  UTI="1"),
+                    method = "lw")
+
+prob.pred.real.3 <- cpquery(fitted = fitt.s1,
+                    event = (EVOLUCAO == "9") ,
+                    evidence = list(IDADE = "(38,75]", CLASSI_FIN = "5", SUPORT_VEN = "3",  UTI="1"),
+                    method = "lw")
+###
+cat ("prob DE EVOLUCAO cura.................:", prob.pred.real.1*100, "\n")
+cat ("prob DE EVOLUCAO óbito por srag.......:", prob.pred.real.2*100, "\n")
+cat ("prob DE EVOLUCAO óbito por outra causa:", prob.pred.real.3*100, "\n")
+
+```
+# PROPORCAO NA TABELA *TEST*
+```{r}
+x <- s2 %>% filter(IDADE == "(38,75]", 
+                   CLASSI_FIN == "5", 
+                   SUPORT_VEN == "3",  
+                   UTI == "1")
+
+nrow(x)
+
+nrow(filter(x, EVOLUCAO=="1"))/nrow(x)*100
+nrow(filter(x, EVOLUCAO=="2"))/nrow(x)*100
+nrow(filter(x, EVOLUCAO=="3"))/nrow(x)*100
+nrow(filter(x, EVOLUCAO=="9"))/nrow(x)*100
+
+```
+
+-------------
+
+# CPQUERY REDE **unica** COM CONHECIMENSTO DO ESPECILISTA
+## mb: "CLASSI_FIN" "IDADE"      "OBESIDADE"  "UTI"        "SUPORT_VEN"
+
+```{r}
+# b: "CLASSI_FIN" "IDADE"      "OBESIDADE"  "UTI"        "SUPORT_VEN"
+fitt.s1.wl.bl <- bn.fit(bn.wl.bl, s1)
+
+prob.pred.real.1 <- cpquery(fitted = fitt.s1.wl.bl,
+                    event = (EVOLUCAO == "1") ,
+                    evidence = list(IDADE = "(38,75]", 
+                                    OBESIDADE = "1",
+                                    CLASSI_FIN = "5", 
+                                    SUPORT_VEN = "3", 
+                                    UTI="1"),
+                    method = "lw")
+
+prob.pred.real.2 <- cpquery(fitted = fitt.s1,
+                    event = (EVOLUCAO == "2") ,
+                    evidence = list(IDADE = "(38,75]", 
+                                    OBESIDADE = "1",
+                                    CLASSI_FIN = "5", 
+                                    SUPORT_VEN = "3", 
+                                    UTI="1"),                    
+                    method = "lw")
+
+prob.pred.real.3 <- cpquery(fitted = fitt.s1,
+                    event = (EVOLUCAO == "3") ,
+                    evidence = list(IDADE = "(38,75]", 
+                                    OBESIDADE = "1",
+                                    CLASSI_FIN = "5", 
+                                    SUPORT_VEN = "3", 
+                                    UTI="1"),
+                    method = "lw")
+
+prob.pred.real.9 <- cpquery(fitted = fitt.s1,
+                    event = (EVOLUCAO == "9") ,
+                    evidence = list(IDADE = "(38,75]", 
+                                    OBESIDADE = "1",
+                                    CLASSI_FIN = "5", 
+                                    SUPORT_VEN = "3", 
+                                    UTI="1"),
+                    method = "lw")
+###
+
+cat ("prob DE EVOLUCAO cura.................:", prob.pred.real.1*100, "\n")
+cat ("prob DE EVOLUCAO óbito por srag.......:", prob.pred.real.2*100, "\n")
+cat ("prob DE EVOLUCAO óbito por outra causa:", prob.pred.real.3*100, "\n")
+cat ("prob DE EVOLUCAO óbito por outra causa:", prob.pred.real.9*100, "\n")
 ```
 
 # PROPORCAO NA TABELA *TEST*
 ```{r}
-# x <- s2 %>% filter(UTI == "1", 
-#                    CLASSI_FIN == "5", 
-#                    SUPORT_VEN == "3",
-#                    IDADE == "[1,37.6667]")
-# 
-# #nrow(x)
-# 
-# nrow(filter(x, EVOLUCAO=="1"))/nrow(x)*100
-# nrow(filter(x, EVOLUCAO=="2"))/nrow(x)*100
-# nrow(filter(x, EVOLUCAO=="3"))/nrow(x)*100
+x <- s2 %>% filter(IDADE == "(38,75]", 
+                   OBESIDADE == "2",
+                   CLASSI_FIN == "5", 
+                   SUPORT_VEN == "3", 
+                   UTI == "1")
+
+nrow(x)
+
+nrow(filter(x, EVOLUCAO=="1"))/nrow(x)*100
+nrow(filter(x, EVOLUCAO=="2"))/nrow(x)*100
+nrow(filter(x, EVOLUCAO=="3"))/nrow(x)*100
+nrow(filter(x, EVOLUCAO=="9"))/nrow(x)*100
 
 ```
 
 --------------
-
+#42
 # Predição
 ```{r echo=FALSE}
  # rede.media.test.dagged <- pdag2dag(rede.media.test, 
  #                                    ordering = names(amostra.test))
 
 #USAR fit da rede da amostra learn, nao test
-fitt <- bn.fit(rede.media.s1.dagged, s1)
+fitt <- bn.fit(bn.wl.bl, s1)
 
 amostra.test.resul <- s2
 amostra.test.resul$PRED.1  <-  rep_len(-1, nrow(s2))
@@ -368,8 +477,8 @@ amostra.test.resul$EVOLUCAO.PRED.3 <- -1
 amostra.test.resul$EVOLUCAO.PRED.9 <- -1
 
 #aqui usar dados teste
-nodos <- s2[, mb(rede.media.s1.dagged, 'EVOLUCAO')]
-nodes.evidencias <-  mb(rede.media.s1.dagged, 'EVOLUCAO')
+nodos <- s2[, mb(bn.wl.bl, 'EVOLUCAO')]
+nodes.evidencias <-  mb(bn.wl.bl, 'EVOLUCAO')
 
 junction = compile(as.grain(fitt))
 # x<-c()
@@ -379,8 +488,8 @@ for (ii in c(1:nrow(nodos))) {
                      states = c(as.character(nodos[ii,1]), 
                                 as.character(nodos[ii,2]), 
                                 as.character(nodos[ii,3]),
-                                as.character(nodos[ii,4])#, 
-                                #as.character(nodos[ii,5])
+                                as.character(nodos[ii,4]), 
+                                as.character(nodos[ii,5])
                                 ))
   
   z <- querygrain(jedu, nodes = c("EVOLUCAO"))
@@ -394,7 +503,7 @@ for (ii in c(1:nrow(nodos))) {
   
 }
 
-res <- amostra.test.resul[, c('EVOLUCAO', 'EVOLUCAO.PRED.1', 'EVOLUCAO.PRED.2', 'EVOLUCAO.PRED.3', 'EVOLUCAO.PRED.9')]
+#res <- amostra.test.resul[, c('EVOLUCAO', 'EVOLUCAO.PRED.1', 'EVOLUCAO.PRED.2', 'EVOLUCAO.PRED.3', 'EVOLUCAO.PRED.9')]
 
 ```
 
@@ -471,7 +580,9 @@ v$EVOLUCAOFINAL  <- EVOLUCAOFINAL
 ```
 
 ```{r}
-fitt <- bn.fit(rede.media.s1.dagged, s1)
+# b: "CLASSI_FIN" "IDADE"      "OBESIDADE"  "UTI"        "SUPORT_VEN"
+
+fitt <- bn.fit(bn.wl.bl, s1)
 prob.pred.cpq <- c()
 
 
@@ -480,14 +591,15 @@ prob.pred.cpq[ii] <- cpquery(fitted = fitt,
                     event = (EVOLUCAO == "2") , 
                     evidence = list(CLASSI_FIN = as.character(nodos[ii,1]), 
                                     IDADE = as.character(nodos[ii,2]), 
-                                    UTI = as.character(nodos[ii,3]),
-                                    SUPORT_VEN = as.character(nodos[ii,4])),
+                                    OBESIDADE = as.character(nodos[ii,3]),
+                                    UTI = as.character(nodos[ii,4]),
+                                    SUPORT_VEN = as.character(nodos[ii,5])),
                     method = "lw")
 }
 ```
 
 
-
+  
 ```{r echo=FALSE}
 # da lib epiR
 print(epi.tests(table(v$EVOLUCAOFINAL, v$RESUL), conf.level = 0.95))
@@ -505,6 +617,7 @@ plot(perf,
      xlab = "Taxa de falsos positivos",
      ylab = "Taxa de verdeiro positivos")
 ```
+
 ```{r echo=FALSE}
 xx <- filter(v, PRED.1==1)
 ROCit_obj <- rocit(score=v$SCORE,class=v$RESUL)
