@@ -721,7 +721,14 @@ for (ii in c(1:nrow(s2))) {
   
 ```{r}
 # da lib epiR
-print(epi.tests(table(x$EVO.1, x$RESUL), conf.level = 0.95))
+b <- filter(x, EVO.1==1)
+print(epi.tests(table(b$SCORE, b$RESUL), conf.level = 0.95))
+```
+
+
+```{r}
+b <- filter(x, EVO.2==1)
+print(epi.tests(table(b$SCORE, b$RESUL), conf.level = 0.95))
 ```
 
 
@@ -738,7 +745,19 @@ plot(perf,
 ```
 
 ```{r echo=FALSE}
-xx <- filter(v, PRED.1==1)
+xx <- filter(x, EVO.1==1)
+ROCit_obj <- rocit(score=xx$SCORE,class=xx$RESUL)
+par(mfrow = c(1, 1))
+plot(ROCit_obj, col = c(2,4))
+legend("bottomright", col = c(2,4),
+       c("Curva ROC empírica", "Acaso"), lwd = 2)
+
+print(summary(ROCit_obj))
+```
+
+
+```{r}
+xx <- filter(x, EVO.2==1)
 ROCit_obj <- rocit(score=xx$SCORE,class=xx$RESUL)
 par(mfrow = c(1, 1))
 plot(ROCit_obj, col = c(2,4))
@@ -749,8 +768,10 @@ print(summary(ROCit_obj))
 ```
 
 ```{r echo=FALSE}
-class <- x$RESUL
-score <- x$SCORE
+xx <- filter(x, EVO.2==1)
+
+class <- xx$RESUL
+score <- xx$SCORE
 #
 rocit <- rocit(score = score, 
                class = class) #default: empirical
