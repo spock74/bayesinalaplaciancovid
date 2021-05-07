@@ -26,24 +26,6 @@ suppressPackageStartupMessages(expr = library(ROCit))
 suppressPackageStartupMessages(expr = library(mice))
 ```
 
-# Redes Bayesianas
-
-Probabilistic reasoning on BNs works in the framework of Bayesian statistics and focuses on the computation of posterior probabilities or densities.
-For example, suppose we have learned a BN B with DAG G and parameters Θ. We want to use B to investigate the effects of a new piece of evidence E using the knowledge encoded in B, that is, to investigate the posterior distribution
-
-$$P(\mathbf{X} | \mathbf{E},\mathbf{\mathcal{B}})=P(\mathbf{X} | \mathbf{E},\mathbf{G},\Theta)$$
-
-The first step of fitting a Bayesian network is called structure learning and consists in identifying the graph structure of the Bayesian network. Ideally, it should be the minimal I-map of the dependence structure of the data or, failing that, it should at least result in a dis- tribution as close as possible to the correct one in the probability space. Several algorithms have been proposed in the literature for structure learning. Despite the variety of theoretical backgrounds and terminology, they fall under three broad cate- gories: constraint-based, score-based, and hybrid algorithms. As an alternative, the network structure can be built manually from the domain knowledge of a human expert and prior information available on the data.
-
-he second step is called parameter learning. As the name suggests, it imple- ments the estimation of the parameters of the global distribution. This task can be performed efficiently by estimating the parameters of the local distributions implied by the structure obtained in the previous step.
-
-Questions that can be asked are called queries and are typically an event of interest. The two most common queries are conditional probability (CPQ) and maximum a posteriori (MAP) queries, also known as most probable explanation (MPE) queries
-
-# Fonte
-URL: https://s3-sa-east-1.amazonaws.com/ckan.saude.gov.br/SRAG/2021/INFLUD21-12-04-2021.csv
-
-
-
 ```{r}
 rm(list = ls())
 # library(readr)
@@ -63,17 +45,17 @@ rm(list = ls())
 
 ###
 #saveRDS(INFLUD21_12_04_2021, './dados/INFLUD21_12_04_2021.rds')
-INFLUD21_12_04_2021 <- readRDS('./dados/INFLUD21_12_04_2021.rds')
 ###
 ```
 
 
 ```{r}
+INFLUD21_12_04_2021 <- readRDS('./dados/INFLUD21_12_04_2021.rds')
+```
 
-boots.trap  <- 10
 
-
-nodos <- c(  "CLASSI_FIN", 
+```{r}
+colunas <- c("CLASSI_FIN", 
              "SEM_NOT", 
              #"DT_SIN_PRI", 
              #"DT_NASC", 
@@ -89,8 +71,9 @@ nodos <- c(  "CLASSI_FIN",
              "EVOLUCAO",
              "DIABETES",
              "OBESIDADE", 
+             "TOMO_RES",
              #"CS_GESTANT",
-             #"DOR_ABD", 
+             "DOR_ABD", 
              #"DT_EVOLUCA", 
              #"CS_RACA", 
              #"CS_SEXO",
@@ -113,25 +96,41 @@ nodos <- c(  "CLASSI_FIN",
              #"DT_INTERNA"
              )
 
-colunas.para.inferencia <- INFLUD21_12_04_2021[,nodos]
-
-dd<-na.omit(colunas.para.inferencia)
-
-glimpse(dd)
-#rm(INFLUD21_12_04_2021)
+dd.with.na <- INFLUD21_12_04_2021[,colunas]
+rm(colunas)
 ```
+
+
+# dados contendo NA´s
+```{r}
+glimpse(dd.with.na)
+```
+
+# Dados com NA´s omitidos
+```{r}
+dd.without.na <- na.omit(dd.with.na)
+glimpse(dd.without.na)
+```
+
 
 ```{r}
 #separar grupo de variaveis para analise
 
-ddf <- dd %>%
+ddf <- dd.with.na %>%
   rename(IDADE = NU_IDADE_N) %>%
-  filter(SG_UF_NOT == "SP") %>%
-  na.omit(ddf) %>%
+  #filter(SG_UF_NOT == "SP") %>%
+  #na.omit(ddf) %>%
   filter(TP_IDADE == 3) %>%
   mutate_if(is.double,as.factor)  %>%
   mutate_if(is.character,as.factor) %>%
   select(-TP_IDADE)
+
+# dat <- dat %>%
+#     mutate(
+#         Smoking = as.factor(Smoking),
+#         Education = as.factor(Education),
+#         Cholesterol = as.numeric(Cholesterol)
+#     )
 
   #ddf$CLASSI_FIN <- NULL
   #options(digits=2)
