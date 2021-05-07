@@ -664,6 +664,9 @@ prob.pred.cpq.9[ii] <- cpquery(fitted = fitt,
 ```{r}
 x <- data.frame(prob.pred.cpq.1, prob.pred.cpq.2, prob.pred.cpq.3, prob.pred.cpq.9)
 
+x$MORTE <- ifelse(x$EVOLUCAO == 2, 1, 0)
+x$CURA  <- ifelse(x$EVOLUCAO == 1, 1, 0)
+
 x$EVO.1 <- ifelse(  prob.pred.cpq.1 > prob.pred.cpq.2 &
                     prob.pred.cpq.1 > prob.pred.cpq.3 &
                     prob.pred.cpq.1 > prob.pred.cpq.9, 1, 0) 
@@ -698,10 +701,10 @@ for (ii in c(1:nrow(s2))) {
     } else if(x$EVOLUCAO[ii] == 9 & x$EVO.9[ii] == 1){
       x$SCORE[ii] <- prob.pred.cpq.9[ii]
     } else { 
-      x$SCORE[ii] <- max(prob.pred.cpq.1[ii],
-                       prob.pred.cpq.2[ii],
-                       prob.pred.cpq.3[ii],
-                       prob.pred.cpq.9[ii])
+      x$SCORE[ii] <- min(prob.pred.cpq.1[ii],
+                         prob.pred.cpq.2[ii],
+                         prob.pred.cpq.3[ii],
+                         prob.pred.cpq.9[ii])
       }
 }
      
@@ -721,21 +724,23 @@ for (ii in c(1:nrow(s2))) {
   
 ```{r}
 # da lib epiR
-b <- filter(x, EVO.1==1)
-print(epi.tests(table(b$SCORE, b$RESUL), conf.level = 0.95))
+print(epi.tests(table(x$MORTE, x$EVO.2), conf.level = 0.95))
 ```
+```{r}
+print(epi.tests(table(x$EVO.1, x$CURA), conf.level = 0.95))
+```
+
 
 
 ```{r}
-b <- filter(x, EVO.2==1)
-print(epi.tests(table(b$SCORE, b$RESUL), conf.level = 0.95))
+print(epi.tests(table(x$EVO.2, x$MORTE), conf.level = 0.95))
 ```
 
 
-### Curva ROC
+### Curva ROC MORTE
 ```{r echo=FALSE}
 # Da library ROCR
-pred <- prediction(x$SCORE, x$RESUL)
+pred <- prediction(x$prob.pred.cpq.2, x$MORTE)
 perf <- performance(pred,"tpr","fpr")
 plot(perf,
      colorize=FALSE,
@@ -744,43 +749,71 @@ plot(perf,
      ylab = "Taxa de verdeiro positivos")
 ```
 
+### Curva ROC CURA
 ```{r echo=FALSE}
-xx <- filter(x, EVO.1==1)
-ROCit_obj <- rocit(score=xx$SCORE,class=xx$RESUL)
-par(mfrow = c(1, 1))
-plot(ROCit_obj, col = c(2,4))
-legend("bottomright", col = c(2,4),
-       c("Curva ROC empírica", "Acaso"), lwd = 2)
-
-print(summary(ROCit_obj))
+# Da library ROCR
+pred <- prediction(x$prob.pred.cpq.1, x$CURA)
+perf <- performance(pred,"tpr","fpr")
+plot(perf,
+     colorize=FALSE,
+     main="Curva ???",
+     xlab = "Taxa de falsos positivos",
+     ylab = "Taxa de verdeiro positivos")
 ```
-
 
 ```{r}
-xx <- filter(x, EVO.2==1)
-ROCit_obj <- rocit(score=xx$SCORE,class=xx$RESUL)
-par(mfrow = c(1, 1))
-plot(ROCit_obj, col = c(2,4))
+class1 <- x$CURA
+score1 <- x$prob.pred.cpq.1
+#
+class2 <- x$MORTE
+score2 <- x$prob.pred.cpq.2
+
+rocit1 <- rocit(score = score1, 
+                class = class1)
+rocit2 <- rocit(score = score2, 
+                class = class2)
+
+par(mfrow = c(1, 2))
+plot(rocit1, col = c(2,4))
 legend("bottomright", col = c(2,4),
        c("Curva ROC empírica", "Acaso"), lwd = 2)
-
-print(summary(ROCit_obj))
+#
+plot(rocit2, col = c(2,4))
+legend("bottomright", col = c(2,4),
+       c("Curva ROC empírica", "Acaso"), lwd = 2)
 ```
 
 ```{r echo=FALSE}
-xx <- filter(x, EVO.2==1)
+par(mfrow = c(1, 2))
 
-class <- xx$RESUL
-score <- xx$SCORE
+class.morte <- x$MORTE
+score.morte <- x$prob.pred.cpq.2
 #
-rocit <- rocit(score = score, 
-               class = class) #default: empirical
-kplot <- ksplot(rocit)
+rocit.morte <- rocit(score = score.morte, 
+                     class = class.morte) #default: empirical
+kplot.morte <- ksplot(rocit.morte)
 #
-message("KS Stat (empirical) : ", 
+message("MORTE KS Stat (empirical) : ", 
+        kplot.morte$`KS stat`)
+#> KS Stat (empirical) : 0.471936339522546
+message("MORTE KS Stat (empirical) cutoff : ", 
+        kplot.morte$`KS Cutoff`)
+#> KS Stat (empirical) cutoff : 0.892084996383686
+
+class.cura <- x$CURA
+score.cura <- x$prob.pred.cpq.1
+#
+rocit.cura <- rocit(score = score.cura, 
+                    class = class.cura) #default: empirical
+kplot.cura <- ksplot(rocit.cura)
+#
+message("CURA KS Stat (empirical) : ", 
         kplot$`KS stat`)
 #> KS Stat (empirical) : 0.471936339522546
-message("KS Stat (empirical) cutoff : ", 
-        kplot$`KS Cutoff`)
+message("CURA KS Stat (empirical) cutoff : ", 
+        kplot.cura$`KS Cutoff`)
 #> KS Stat (empirical) cutoff : 0.892084996383686
 ```
+
+
+
