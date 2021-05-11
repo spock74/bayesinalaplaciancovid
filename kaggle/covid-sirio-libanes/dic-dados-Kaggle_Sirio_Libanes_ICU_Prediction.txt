@@ -1,0 +1,29 @@
+
+
+About this file
+Data was obtain and grouped
+
+patient
+-- patient encounter
+-- aggregated by windows in chronological order
+
+Window	Description
+0-2	From 0 to 2 hours of the admission
+2-4	From 2 to 4 hours of the admission
+4-6	From 4 to 6 hours of the admission
+6-12	From 6 to 12 hours of the admission
+Above-12	Above 12 hours from admission
+Beware NOT to use the data when the target variable is present, as it is unknown the order of the event (maybe the target event happened before the results were obtained). They were kept there so we can grow this dataset in other outcomes latter on.
+
+Cleaned up and scaled
+Data has been cleaned and scaled by column according to Min Max Scaler to fit betweeen -1 and 1.
+
+Available data
+Patient demographic information
+Patient previous grouped diseases
+Blood results
+Vital signs
+Blood gases
+In total there are 42 features, expanded to the mean, max, min, diff and relative diff.
+
+All relevant clinical and ethically compliant fields were extracted from either the EHR (which hosts lab results as well) and PACS, from patients suspected of COVID-19 using either 1. CID Classification B34.2 or B34.9 2. Ordered RT-PCR or IgA result 3. Chest CT with suspect findings

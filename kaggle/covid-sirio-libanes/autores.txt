@@ -1,0 +1,57 @@
+Authors
+Name
+
+Antonildes Nascimento Assunção Junior
+Bio
+
+Data Scientist
+Name
+
+Felipe Veiga Rodrigues
+Bio
+
+Physician
+Name
+
+Rafael De Lamonica Bezerra
+Bio
+
+IT
+Name
+
+Cleber Boldrini
+Bio
+
+IT
+Name
+
+Ailton Brandao
+Bio
+
+CIO
+Name
+
+Rodrigo Cabrera Castaldoni
+Bio
+
+Data Scientist
+Updates
+Expected update frequency
+
+Never
+Last updated
+
+2020-06-22
+Date created
+
+2020-04-16
+Current version
+
+Version 4
+Date Coverage
+Temporal coverage
+
+2020-01-28to2020-04-16
+Spatial coverage
+
+Brazil, São Paulo
